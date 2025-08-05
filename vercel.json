@@ -1,7 +1,5 @@
 {
   "version": 2,
-  "devCommand": "cd frontend && npm run dev -- --host",
-  
   "builds": [
     {
       "src": "backend/backend/wsgi.py",
@@ -9,20 +7,26 @@
     },
     {
       "src": "frontend/package.json",
-      "use": "@vercel/node",
+      "use": "@vercel/static-build",
       "config": {
-        "includeFiles": "dist"
+        
+        "distDir": "frontend/dist"
       }
     }
   ],
   "routes": [
     {
+        
       "src": "/api/(.*)",
       "dest": "backend/backend/wsgi.py"
     },
     {
+        
+      "handle": "filesystem"
+    },
+    {
       "src": "/(.*)",
-      "dest": "frontend/$1"
+      "dest": "/index.html"
     }
   ]
 }
