@@ -1,0 +1,10 @@
+/* src/pages/AuthPage.css */
+
+.auth-page-container {
+  display: flex;
+  justify-content: center; /* Horizontally center the content */
+  align-items: flex-start;  /* Align to the top */
+  padding-top: 4rem;      /* Add some space from the header */
+  padding-bottom: 4rem;
+  width: 100%;
+}

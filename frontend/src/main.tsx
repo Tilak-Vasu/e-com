@@ -3,38 +3,42 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter as Router } from 'react-router-dom';
+import { ClerkProvider } from '@clerk/clerk-react';
+
 import App from './App.tsx';
-
-// --- FIX THESE LINES ---
-// Remove the .ts or .tsx extension from the import path.
-import { AuthProvider } from './context/AuthContext';
-import { ProductProvider } from './context/ProductContext';
-import { CartProvider } from './context/CartContext';
-import { LikedProductsProvider } from './context/LikedProductsContext';
+// Import your other providers
+import { ProductProvider } from './context/ProductContext.tsx';
+import { CartProvider } from './context/CartContext.tsx';
+import { LikedProductsProvider } from './context/LikedProductsContext.tsx';
 import { OrderHistoryProvider } from './context/OrderHistoryContext.tsx';
-// --- END OF FIX ---
-
 import './index.css';
-const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
+
+// Get your publishable key from the environment variables
+const PUBLISHABLE_KEY = 'pk_test_bW9kZWwtZ29ibGluLTkxLmNsZXJrLmFjY291bnRzLmRldiQ';
 
 if (!PUBLISHABLE_KEY) {
-  throw new Error("Missing Publishable Key");
+  throw new Error("Missing Clerk Publishable Key. Please set VITE_CLERK_PUBLISHABLE_KEY in your .env.local file.");
 }
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
+  // <React.StrictMode>
     <Router>
-      <AuthProvider>
+      {/* --- THIS IS THE KEY FIX --- */}
+      {/* The ClerkProvider MUST be one of the outermost providers. */}
+      <ClerkProvider publishableKey={PUBLISHABLE_KEY}>
+        
+        {/* All your other application-specific providers go INSIDE ClerkProvider */}
         <ProductProvider>
           <LikedProductsProvider>
-            <OrderHistoryProvider>
             <CartProvider>
-              <App />
+              <OrderHistoryProvider>
+                <App />
+              </OrderHistoryProvider>
             </CartProvider>
-            </OrderHistoryProvider>
           </LikedProductsProvider>
         </ProductProvider>
-      </AuthProvider>
+        
+      </ClerkProvider>
     </Router>
-  </React.StrictMode>,
+  // </React.StrictMode>,
 );

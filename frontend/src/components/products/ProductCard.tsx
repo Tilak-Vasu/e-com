@@ -1,9 +1,8 @@
-// src/components/products/ProductCard.tsx
 
 import React from 'react';
 import type { Product } from '../../api/types';
-import useAuth from '../../hooks/useAuth';
-import useCart from '../../hooks/useCart'; // <-- We need the full cart context now
+import { useUser } from '@clerk/clerk-react'; // <-- IMPORT Clerk's hook
+import useCart from '../../hooks/useCart';
 import useLikedProducts from '../../hooks/useLikedProducts';
 import productImage from '../../assets/images/product-placeholder.webp';
 import './ProductCard.css';
@@ -13,19 +12,18 @@ interface ProductCardProps {
 }
 
 const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
-  const { user } = useAuth();
-  // Get all the functions and data we need from the cart context
+  // --- THIS IS THE KEY CHANGE ---
+  // We use Clerk's `useUser` hook. `isSignedIn` will be true or false.
+  const { isSignedIn } = useUser(); 
+  
   const { cartItems, addToCart, decreaseQuantity } = useCart();
   const { likeProduct, unlikeProduct, isLiked } = useLikedProducts();
 
-  // --- NEW LOGIC: Check if this specific product is in the cart ---
-  // The .find() method will return the item object (including its quantity) or undefined
   const itemInCart = cartItems.find(item => item.id === product.id);
-
   const liked = isLiked(product.id);
 
   const handleToggleLike = () => {
-    if (!user) {
+    if (!isSignedIn) {
       alert('Please log in to like products.');
       return;
     }
@@ -36,9 +34,8 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
     }
   };
 
-  // This function is now only for the initial "Add to Cart" button click
   const handleInitialAddToCart = () => {
-    if (!user) {
+    if (!isSignedIn) {
       alert('Please log in to add items to your cart.');
       return;
     }
@@ -54,28 +51,30 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
         <p className="product-price">${product.price.toFixed(2)}</p>
       </div>
       <div className="product-actions">
-        {/* The Like/Unlike button is always visible */}
+        {/* Use the `isSignedIn` boolean to disable the buttons */}
         <button
           onClick={handleToggleLike}
-          disabled={!user}
+          disabled={!isSignedIn}
           className={`like-btn ${liked ? 'liked' : ''}`}
-          title={!user ? 'Log in to like' : (liked ? 'Unlike product' : 'Like product')}
+          title={!isSignedIn ? 'Log in to like' : (liked ? 'Unlike product' : 'Like product')}
         >
           {liked ? '❤️ Unlike' : '🤍 Like'}
         </button>
 
-        {/* --- THIS IS THE CONDITIONAL RENDERING LOGIC --- */}
         {itemInCart ? (
-          // If the item is in the cart, show the quantity controller
           <div className="quantity-controller">
             <button onClick={() => decreaseQuantity(product.id)} className="quantity-btn">-</button>
             <span className="quantity-display">{itemInCart.quantity}</span>
             <button onClick={() => addToCart(product)} className="quantity-btn">+</button>
           </div>
         ) : (
-          // Otherwise, show the "Add to Cart" button
-          <button onClick={handleInitialAddToCart} disabled={!user} className="add-to-cart-btn" title={!user ? 'Log in to add to cart' : 'Add to cart'}>
-          🛒 Add to Cart
+          <button
+            onClick={handleInitialAddToCart}
+            disabled={!isSignedIn}
+            className="add-to-cart-btn"
+            title={!isSignedIn ? 'Log in to add to cart' : 'Add to cart'}
+          >
+            🛒 Add to Cart
           </button>
         )}
       </div>

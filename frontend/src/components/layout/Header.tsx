@@ -10,23 +10,30 @@ const Header: React.FC = () => {
   return (
     <header className="main-header">
       <Link to="/" className="logo">E-SHOP</Link>
+      
       <nav className="main-nav">
         <ul>
-          {/* These links are visible to everyone */}
+          {/* These links are always visible */}
           <li><NavLink to="/liked">Liked Products</NavLink></li>
-          <li><NavLink to="/orders">My Orders</NavLink></li>
-
-          {/* This block will only render if the user is signed IN */}
+          
+          {/* --- This block will only render if the user is signed IN --- */}
           <SignedIn>
+            <li><NavLink to="/orders">My Orders</NavLink></li>
             <li><UserButton afterSignOutUrl="/" /></li>
           </SignedIn>
 
-          {/* This block will only render if the user is signed OUT */}
+          {/* --- THIS IS THE KEY CHANGE --- */}
+          {/* --- This block will only render if the user is signed OUT --- */}
           <SignedOut>
-            <li><NavLink to="/login">Login</NavLink></li>
-            <li><NavLink to="/register">Register</NavLink></li>
+            {/* We now have a single, combined link */}
+            <li>
+              <NavLink to="/login" className="login-register-link">
+                Login / Register
+              </NavLink>
+            </li>
           </SignedOut>
 
+          {/* The cart icon is always visible */}
           <li><CartIcon /></li>
         </ul>
       </nav>

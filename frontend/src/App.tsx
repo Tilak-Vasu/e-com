@@ -4,6 +4,7 @@ import { Routes, Route } from 'react-router-dom';
 // --- CLERK IMPORTS ---
 // These components from Clerk will now handle our authentication UI and logic.
 import { SignIn, SignUp, SignedIn, SignedOut } from '@clerk/clerk-react';
+import AuthPage from './pages/AuthPage'; // <-- IMPORT THE NEW PAGE
 
 // --- LAYOUT AND PAGE IMPORTS ---
 import Header from './components/layout/Header';
@@ -36,8 +37,23 @@ const App: React.FC = () => {
             {/* --- CLERK AUTHENTICATION ROUTES --- */}
             {/* Clerk's components now render the entire login and registration pages. */}
             {/* The "/*" is important to allow Clerk to handle nested routes. */}
-            <Route path="/login/*" element={<SignIn routing="path" path="/login" />} />
-            <Route path="/register/*" element={<SignUp routing="path" path="/register" />} />
+            <Route 
+              path="/login/*" 
+              element={
+                <AuthPage>
+                  <SignIn routing="path" path="/login" />
+                </AuthPage>
+              } 
+            />
+            <Route 
+              path="/register/*" 
+              element={
+                <AuthPage>
+                  <SignUp routing="path" path="/register" />
+                </AuthPage>
+              } 
+            />
+
 
             {/* --- PROTECTED ROUTES --- */}
             {/* Any route that requires a user to be logged in goes here. */}
