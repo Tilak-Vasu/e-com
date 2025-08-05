@@ -1,15 +1,17 @@
 # backend/api/views.py
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+from .authentication import ClerkAuthentication # <-- IMPORT IT
 
-from django.contrib.auth.models import User
-from rest_framework import generics
-from .serializers import UserSerializer, MyTokenObtainPairSerializer # Import it
-from rest_framework_simplejwt.views import TokenObtainPairView
+class ProtectedDataView(APIView):
+    # This view requires a valid Clerk token to be accessed
+    authentication_classes = [ClerkAuthentication]
+    permission_classes = [IsAuthenticated]
 
-class CreateUserView(generics.CreateAPIView):
-    queryset = User.objects.all()
-    serializer_class = UserSerializer
-    permission_classes = []
-
-# --- ADD THIS NEW VIEW ---
-class MyTokenObtainPairView(TokenObtainPairView):
-    serializer_class = MyTokenObtainPairSerializer
+    def get(self, request, *args, **kwargs):
+        # You can access the user's Clerk ID like this:
+        clerk_user_id = request.user.id
+        print(f"Authenticated request from Clerk user: {clerk_user_id}")
+        
+        return Response({"message": "This is protected data!"})

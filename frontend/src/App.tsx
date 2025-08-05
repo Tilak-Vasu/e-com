@@ -1,25 +1,23 @@
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 
-// Import Layout Components
+// --- CLERK IMPORTS ---
+// These components from Clerk will now handle our authentication UI and logic.
+import { SignIn, SignUp, SignedIn, SignedOut } from '@clerk/clerk-react';
+
+// --- LAYOUT AND PAGE IMPORTS ---
 import Header from './components/layout/Header';
 import Footer from './components/layout/Footer';
-import ProtectedRoute from './components/layout/ProtectedRoute';
-
-// Import Page Components
 import HomePage from './pages/HomePage';
-import LoginPage from './pages/LoginPage';
-import RegisterPage from './pages/RegisterPage';
 import LikedProductsPage from './pages/LikedProductsPage';
 import CartPage from './pages/CartPage';
 import ProductDetailPage from './pages/ProductDetailPage';
-import CheckoutPage from './pages/CheckoutPage'; // This will now handle Stripe internally
+import CheckoutPage from './pages/CheckoutPage';
 import OrderHistoryPage from './pages/OrderHistoryPage';
 import OrderSuccessPage from './pages/OrderSuccessPage';
 // import OrderCancelledPage from './pages/OrderCancelledPage';
 import NotFoundPage from './pages/NotFoundPage';
 
-// NO Stripe code should be in this file.
 
 const App: React.FC = () => {
   return (
@@ -29,22 +27,63 @@ const App: React.FC = () => {
         <div className="container">
           <Routes>
             {/* --- PUBLIC ROUTES --- */}
+            {/* These routes are accessible to everyone, logged in or not. */}
             <Route path="/" element={<HomePage />} />
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/register" element={<RegisterPage />} />
             <Route path="/product/:productId" element={<ProductDetailPage />} />
             <Route path="/order/success" element={<OrderSuccessPage />} />
             {/* <Route path="/order/cancelled" element={<OrderCancelledPage />} /> */}
 
-            {/* --- PROTECTED ROUTES --- */}
-            <Route element={<ProtectedRoute />}>
-              <Route path="/liked" element={<LikedProductsPage />} />
-              <Route path="/cart" element={<CartPage />} />
-              <Route path="/checkout" element={<CheckoutPage />} />
-              <Route path="/orders" element={<OrderHistoryPage />} />
-            </Route>
+            {/* --- CLERK AUTHENTICATION ROUTES --- */}
+            {/* Clerk's components now render the entire login and registration pages. */}
+            {/* The "/*" is important to allow Clerk to handle nested routes. */}
+            <Route path="/login/*" element={<SignIn routing="path" path="/login" />} />
+            <Route path="/register/*" element={<SignUp routing="path" path="/register" />} />
 
-            {/* --- CATCH-ALL ROUTE --- */}
+            {/* --- PROTECTED ROUTES --- */}
+            {/* Any route that requires a user to be logged in goes here. */}
+            <Route
+              path="/liked"
+              element={
+                <>
+                  <SignedIn>
+                    <LikedProductsPage />
+                  </SignedIn>
+                  <SignedOut>
+                    {/* When signed out, redirect to the sign-in page */}
+                    <SignIn routing="path" path="/login" />
+                  </SignedOut>
+                </>
+              }
+            />
+            <Route
+              path="/cart"
+              element={
+                <>
+                  <SignedIn><CartPage /></SignedIn>
+                  <SignedOut><SignIn routing="path" path="/login" /></SignedOut>
+                </>
+              }
+            />
+            <Route
+              path="/checkout"
+              element={
+                <>
+                  <SignedIn><CheckoutPage /></SignedIn>
+                  <SignedOut><SignIn routing="path" path="/login" /></SignedOut>
+                </>
+              }
+            />
+             <Route
+              path="/orders"
+              element={
+                <>
+                  <SignedIn><OrderHistoryPage /></SignedIn>
+                  <SignedOut><SignIn routing="path" path="/login" /></SignedOut>
+                </>
+              }
+            />
+
+            {/* --- CATCH-ALL ROUTE (MUST BE LAST) --- */}
             <Route path="*" element={<NotFoundPage />} />
           </Routes>
         </div>

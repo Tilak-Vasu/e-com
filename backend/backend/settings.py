@@ -27,6 +27,7 @@ SECRET_KEY = 'django-insecure-d2-4)_(3iscm-clxp(33ijx)0otlh6sjp2ji39^oy($zm2*)&0
 DEBUG = False
 
 ALLOWED_HOSTS = ['e-commerce-delta-two-93.vercel.app', '127.0.0.1']
+CLERK_SECRET_KEY = 'pk_test_bW9kZWwtZ29ibGluLTkxLmNsZXJrLmFjY291bnRzLmRldiQ'
 
 
 # Application definition
