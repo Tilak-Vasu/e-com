@@ -1,12 +1,14 @@
 {
   "version": 2,
-  "scripts": {
-    "build": "bash build.sh" 
-  },
   "builds": [
     {
-      "src": "backend/backend/wsgi.py", 
-      "use": "@vercel/python"
+      "src": "backend/backend/wsgi.py",
+      "use": "@vercel/python",
+      "config": {
+        "maxLambdaSize": "15mb",
+        "runtime": "python3.9",
+        "buildCommand": "python backend/manage.py migrate --noinput"
+      }
     },
     {
       "src": "frontend/package.json",
