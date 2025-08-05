@@ -3,24 +3,20 @@
   "builds": [
     {
       "src": "backend/backend/wsgi.py",
-      "use": "@vercel/python"
+      "use": "@vercel/python",
+      "config": {
+        "maxLambdaSize": "15mb",
+        "runtime": "python3.9",
+        
+        "buildCommand": "bash build_backend.sh"
+      }
     },
     {
       "src": "frontend/package.json",
       "use": "@vercel/static-build",
-      
       "config": { "distDir": "dist" }
     }
   ],
-  
-  "build": {
-    "env": {
-        
-      "NODE_VERSION": "18.x" 
-    },
-    
-    "command": "bash build.sh" 
-  },
   "routes": [
     {
       "src": "/api/(.*)",
