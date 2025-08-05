@@ -25,13 +25,12 @@ SECRET_KEY = 'django-insecure-d2-4)_(3iscm-clxp(33ijx)0otlh6sjp2ji39^oy($zm2*)&0
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['.vercel.app',, '127.0.0.1']
+ALLOWED_HOSTS = ['.vercel.app', '127.0.0.1']
 
 
 # Application definition
 
 INSTALLED_APPS = [
-    r"^https://.*\.vercel\.app$",
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -133,6 +132,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # Allow your React development server to make requests
 # Replace 'http://localhost:5173' with the actual URL of your Vite dev server
 CORS_ALLOWED_ORIGINS = [
+    r"^https://.*\.vercel\.app$",
     "http://localhost:5173",
     "http://127.0.0.1:5173",
      "http://localhost:4173",
