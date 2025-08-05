@@ -173,7 +173,7 @@ const CheckoutForm: React.FC = () => {
       }
       
       const cardElement = elements.getElement(CardElement)!;
-      const { error, paymentMethod: createdPaymentMethod } = await stripe.createPaymentMethod({
+      const { error } = await stripe.createPaymentMethod({
         type: 'card',
         card: cardElement,
         billing_details: { name: shippingInfo.fullName },
