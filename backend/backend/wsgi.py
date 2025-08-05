@@ -2,16 +2,16 @@
 
 import os
 import sys
-from pathlib import Path
+from pathlib import Path # <-- Add this import
 from django.core.wsgi import get_wsgi_application
 
-# This adds your project to the Python path to solve the 'backend.settings' error
+# --- ADD THESE THREE LINES ---
+# This ensures the Vercel runtime can also find your settings module.
 ROOT_DIR = Path(__file__).resolve().parent.parent
 sys.path.append(str(ROOT_DIR))
+# --- END OF ADDITION ---
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'backend.settings')
 
-# --- THIS IS THE KEY FIX ---
-# We are renaming the variable from 'application' to 'app'
-# so that Vercel's Python runtime can find it.
+# The variable must be named 'app' for Vercel
 app = get_wsgi_application()
