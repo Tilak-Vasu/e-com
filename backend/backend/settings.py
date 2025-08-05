@@ -132,7 +132,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # Allow your React development server to make requests
 # Replace 'http://localhost:5173' with the actual URL of your Vite dev server
 CORS_ALLOWED_ORIGINS = [
-    "https://e-commerce-delta-two-93.vercel.app/",
+    "https://e-commerce-delta-two-93.vercel.app",
     "http://localhost:5173",
     "http://127.0.0.1:5173",
      "http://localhost:4173",
