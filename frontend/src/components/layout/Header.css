@@ -1,0 +1,79 @@
+.main-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: var(--color-white);
+  border-bottom: 1px solid var(--color-border);
+  box-shadow: var(--shadow-sm);
+  height: 90px; /* slightly taller */
+  padding: 0 3rem; /* more padding */
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+}
+
+.logo {
+  font-size: 2.2rem; /* 🔥 Bigger, more prominent */
+  font-weight: 800;
+  color: var(--color-primary-dark);
+  text-decoration: none;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+.main-nav ul {
+  display: flex;
+  align-items: center;
+  list-style: none;
+  gap: 32px;
+}
+
+.main-nav a,
+.logout-btn,
+.cart-button {
+  color: var(--color-text-light);
+  font-weight: 500;
+  padding: 12px 18px;
+  font-size: 1.15rem;
+  border-radius: var(--border-radius);
+  transition: color 0.2s, background-color 0.2s;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.main-nav a:hover,
+.logout-btn:hover,
+.cart-button:hover {
+  color: var(--color-primary);
+}
+
+.main-nav a.active {
+  color: var(--color-primary);
+  font-weight: bold;
+}
+@media (max-width: 768px) {
+  .main-header {
+    padding: 0 1rem;
+    height: auto;
+  }
+
+  .logo {
+    font-size: 1.5rem; /* smaller logo text */
+    
+  }
+
+  .main-nav ul {
+    gap: 8px;
+    
+  }
+
+  /* Consistent font for ALL nav items */
+  .main-nav a,
+  .logout-btn,
+  .cart-button,
+  .welcome-message span {
+    font-size: 0.75rem; /* make everything match Cart */
+    padding: 6px 8px;
+  }
+}

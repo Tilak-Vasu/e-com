@@ -1,0 +1,99 @@
+/* src/pages/CartPage.css */
+
+.cart-page {
+  max-width: 1200px;
+  margin: 2rem auto; /* Add margin top/bottom */
+  padding: 2rem;
+  background-color: var(--color-white);
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow-md);
+}
+
+.cart-page h1 {
+  font-size: 2.5em;
+  font-weight: 700;
+  margin-top: 0;
+  margin-bottom: 2rem;
+  text-align: center;
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: 1.5rem;
+}
+
+.cart-layout {
+  display: grid; /* Use grid for more control */
+  grid-template-columns: 2fr 1fr; /* 2/3 for items, 1/3 for summary */
+  gap: 2rem;
+  align-items: flex-start;
+}
+
+.cart-items-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.cart-summary-card {
+  width: 100%;
+  background-color: var(--color-background);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius);
+  padding: 1.5rem;
+  position: sticky; /* Make summary card stick while scrolling items */
+  top: 100px; /* 80px header + 20px margin */
+}
+
+.cart-summary-card h2 {
+  font-size: 1.5em;
+  margin-top: 0;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: 1rem;
+}
+
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  font-size: 1.1em;
+}
+
+.summary-row span:last-child {
+  font-weight: 600;
+}
+
+.summary-row.total {
+  font-weight: bold;
+  font-size: 1.4em;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 2px solid var(--color-text);
+}
+
+.cart-summary-card .btn {
+  width: 100%;
+  margin-top: 1rem;
+  padding: 12px;
+  font-size: 1.1em;
+}
+
+.empty-cart {
+  text-align: center;
+  padding: 4rem 2rem;
+}
+.empty-cart h2 {
+  font-size: 2em;
+}
+.empty-cart p {
+  color: #666;
+  margin-bottom: 2rem;
+}
+
+/* Mobile Responsive Cart Page */
+@media (max-width: 992px) {
+  .cart-layout {
+    grid-template-columns: 1fr; /* Stack on smaller screens */
+  }
+  .cart-summary-card {
+    position: static; /* Unstick the summary card */
+  }
+}

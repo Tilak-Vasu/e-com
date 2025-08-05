@@ -1,0 +1,18 @@
+// frontend/tsconfig.jest.json
+
+{
+  // 1. Inherit all the settings from your main app's tsconfig
+  "extends": "./tsconfig.app.json",
+  
+  "compilerOptions": {
+    // 2. This is the key fix:
+    // We explicitly turn OFF this stricter module setting for the test environment.
+    "verbatimModuleSyntax": false,
+    
+    // 3. This flag is also essential for compatibility
+    "esModuleInterop": true 
+  },
+  
+  // 4. Tell this config to also be aware of your test setup file
+  "include": ["src", "jest.setup.js"] 
+}

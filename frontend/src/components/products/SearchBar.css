@@ -1,0 +1,13 @@
+
+
+.search-bar-container {
+  margin-bottom: 1.5rem;
+}
+.search-input {
+  width: 100%; padding: 12px 15px; font-size: 1.5rem;
+  border-radius: var(--border-radius); border: 1px solid var(--color-border);
+}
+.search-input:focus {
+  outline: none; border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+}

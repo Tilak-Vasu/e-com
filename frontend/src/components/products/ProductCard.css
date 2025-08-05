@@ -1,0 +1,177 @@
+/* productcard.css */
+
+.product-card {
+  background: var(--color-white);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.product-card:hover {
+  transform: translateY(-5px);
+  box-shadow: var(--shadow-md);
+}
+
+.product-image {
+  width: 100%;
+  aspect-ratio: 1 / 1; /* Slightly wider image */
+  object-fit: cover;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.product-info {
+  padding: 1rem;
+  flex-grow: 1;
+}
+
+.product-category {
+  font-size: 0.8em;
+  color: var(--color-text-light);
+  margin-bottom: 0.25rem;
+}
+
+.product-name {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0 0 0.5rem 0;
+  color: var(--color-text);
+  line-height: 1.3;
+}
+
+.product-price {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+/* --- ACTION BUTTONS CONTAINER --- */
+.product-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1rem 1rem;
+  gap: 0.5rem; /* Less space between like and quantity */
+}
+
+/* --- UNIFIED STYLES FOR ACTION BUTTONS --- */
+.like-btn, .add-to-cart-btn {
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 15px;
+  border-radius: var(--border-radius);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 1rem;
+}
+
+.like-btn {
+  background-color: var(--color-white);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  flex-basis: 40%;
+}
+.like-btn:hover:not(:disabled) {
+  background-color: var(--color-background);
+}
+.like-btn.liked {
+  background-color: #fdd8dd;
+  color: #c82333;
+  border-color: #f5c6cb;
+}
+.like-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.add-to-cart-btn {
+  background-color: var(--color-primary);
+  color: var(--color-white);
+  border: 1px solid var(--color-primary);
+  flex-grow: 1;
+}
+.add-to-cart-btn:hover:not(:disabled) {
+  background-color: var(--color-primary-dark);
+}
+.add-to-cart-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* --- EXPANDED QUANTITY CONTROLLER --- */
+
+.quantity-controller {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-basis: 60%;
+  height: 44px;
+  
+  /* The entire controller has the light blue background */
+  background-color: #e7f1ff; 
+  border-radius: var(--border-radius);
+  /* Use a slightly darker border for definition */
+  border: 1px solid #dbe9ff; 
+  
+  overflow: hidden; 
+}
+
+.quantity-btn {
+  /* The buttons are transparent to show the blue background */
+  background-color: transparent; 
+  border: none;
+  color: var(--color-primary);
+  font-size: 1.5rem;
+  font-weight: 600;
+  cursor: pointer;
+  width: 44px;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s;
+}
+.quantity-btn:hover {
+  /* A very subtle darker blue on hover */
+  background-color: rgba(0, 123, 255, 0.1); 
+}
+
+.quantity-display {
+  font-size: 1.2rem;
+  font-weight: 700;
+  min-width: 40px;
+  text-align: center;
+  color: var(--color-primary-dark);
+  
+  /* Ensure it doesn't have its own background */
+  background-color: transparent;
+
+  height: 60%; /* Make the vertical lines shorter than the container */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* --- OPTIONAL: Responsive Stack for Small Screens --- */
+@media (max-width: 500px) {
+  .product-actions {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .like-btn,
+  .quantity-controller {
+    width: 100%;
+    flex-basis: auto;
+  }
+
+  .quantity-controller {
+    justify-content: space-around;
+  }
+}

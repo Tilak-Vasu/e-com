@@ -1,0 +1,107 @@
+/* src/components/cart/CartDropdown.css */
+
+.cart-dropdown {
+  position: absolute;
+  top: 100%; 
+  right: 0;
+  margin-top: 10px;
+  width: 400px; 
+  max-height: 450px;
+  background-color: var(--color-white);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow-md);
+  display: flex;
+  flex-direction: column;
+  z-index: 1000;
+}
+
+.cart-items-container {
+  padding: 0.5rem 1.5rem;
+  overflow-y: auto;
+  flex-grow: 1;
+}
+
+.empty-message {
+  text-align: center;
+  color: var(--color-text-light);
+  padding: 3rem 1rem;
+}
+
+.cart-summary {
+  padding: 1rem 1.5rem;
+  border-top: 1px solid var(--color-border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: var(--color-background);
+}
+
+.total {
+  font-weight: bold;
+  font-size: 1.1em;
+}
+
+/* This is the base style for the button */
+.go-to-cart-btn {
+  padding: 10px 20px;
+  background-color: var(--color-primary);
+  color: var(--color-white); /* Text is white by default */
+  text-decoration: none;
+  border-radius: var(--border-radius);
+  text-align: center;
+  font-weight: 600;
+  /* Add transitions for smooth color changes */
+  transition: background-color 0.2s, color 0.2s; 
+}
+
+/* --- THIS IS THE KEY CHANGE --- */
+/* This is the style for the button WHEN HOVERED */
+.go-to-cart-btn:hover {
+  background-color: var(--color-primary-dark); /* Background becomes a darker blue */
+  color: var(--color-white) !important; /* Re-affirm the color */
+  text-decoration: none;
+}
+
+
+
+/* --- CONTEXTUAL STYLES FOR ITEMS INSIDE DROPDOWN --- */
+/* These rules shrink and simplify the CartItem component for the dropdown view */
+
+.cart-dropdown .cart-item {
+  padding: 1rem 0.5rem;
+  gap: 0.75rem;
+}
+.cart-dropdown .cart-item-image {
+  width: 65px;
+  height: 65px;
+}
+
+.cart-dropdown .cart-item-name {
+  font-size: 1rem;
+  /* Add text truncation for very long names */
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+.cart-dropdown .cart-item-price-quantity {
+  font-size: 0.9em;
+  gap: 0.75rem;
+}
+
+/* Make quantity controls smaller for the dropdown */
+.cart-dropdown .quantity-btn {
+  width: 24px;
+  height: 24px;
+  font-size: 1rem;
+}
+
+.cart-dropdown .quantity-display {
+  font-size: 1rem;
+  padding: 0 5px;
+  min-width: 30px;
+}
+
+/* Hide the main "remove" button and show a simpler one */
+.cart-dropdown .remove-btn {
+  display: none; /* We can add a simpler remove icon if needed later */
+}
