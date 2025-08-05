@@ -23,7 +23,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-d2-4)_(3iscm-clxp(33ijx)0otlh6sjp2ji39^oy($zm2*)&0'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = ['e-commerce-delta-two-93.vercel.app', '127.0.0.1']
 
