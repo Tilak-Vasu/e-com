@@ -40,6 +40,8 @@
   border: none;
   cursor: pointer;
   font-family: inherit;
+  text-decoration: none;
+
 }
 
 .main-nav a:hover,
