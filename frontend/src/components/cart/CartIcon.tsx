@@ -12,7 +12,7 @@ const CartIcon: React.FC = () => {
   return (
     <div className="cart-icon-container">
       <button onClick={() => setIsOpen(!isOpen)} className="cart-button">
-        Cart
+        🛒
         {cartCount > 0 && <span className="cart-badge">{cartCount}</span>}
       </button>
       {isOpen && <CartDropdown closeDropdown={() => setIsOpen(false)} />}
