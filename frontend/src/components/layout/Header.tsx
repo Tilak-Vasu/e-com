@@ -14,7 +14,7 @@ const Header: React.FC = () => {
       <nav className="main-nav">
         <ul>
           {/* These links are always visible */}
-          <li><NavLink to="/liked">Liked Products</NavLink></li>
+          <li><NavLink to="/liked">❤</NavLink></li>
           
           {/* --- This block will only render if the user is signed IN --- */}
           <SignedIn>
