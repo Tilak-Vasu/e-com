@@ -2,16 +2,20 @@
 
 import os
 import sys
-from pathlib import Path # <-- Add this import
+from pathlib import Path
 from django.core.wsgi import get_wsgi_application
 
-# --- ADD THESE THREE LINES ---
-# This ensures the Vercel runtime can also find your settings module.
+# This line fixes the Python Path issue for both local and production
 ROOT_DIR = Path(__file__).resolve().parent.parent
 sys.path.append(str(ROOT_DIR))
-# --- END OF ADDITION ---
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'backend.settings')
 
-# The variable must be named 'app' for Vercel
-app = get_wsgi_application()
+# --- THIS IS THE KEY FIX ---
+
+# The local `runserver` command looks for a variable named 'application'.
+application = get_wsgi_application()
+
+# The Vercel deployment environment looks for a variable named 'app'.
+# We will create 'app' and point it to the same object as 'application'.
+app = application

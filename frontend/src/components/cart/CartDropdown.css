@@ -105,3 +105,80 @@
 .cart-dropdown .remove-btn {
   display: none; /* We can add a simpler remove icon if needed later */
 }
+@media (max-width: 200px) {
+  .cart-dropdown {
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+    width: 95vw;
+    max-height: 80vh;
+    border-radius: 0.5rem;
+  }
+
+  /* Reduce side padding to gain more space */
+  .cart-items-container {
+    padding: 0.5rem 0.75rem;
+  }
+
+  /* Make items and their spacing more compact */
+  .cart-dropdown .cart-item {
+    flex-direction: row;
+    align-items: center;
+    gap: 0.4rem; /* Reduced gap */
+    padding: 0.6rem 0.25rem; /* Reduced padding */
+  }
+
+  /* Make the image smaller */
+  .cart-dropdown .cart-item-image {
+    width: 40px;
+    height: 40px;
+  }
+
+  /* Reduce font size and adjust max-width for the name */
+  .cart-dropdown .cart-item-name {
+    font-size: 0.8rem;
+    max-width: 100px; /* Adjusted max-width */
+  }
+
+  /* Reduce font size for price/qty text */
+  .cart-dropdown .cart-item-price-quantity {
+    font-size: 0.75rem;
+    gap: 0.5rem;
+  }
+  
+  /* Make quantity buttons smaller */
+  .cart-dropdown .quantity-btn {
+    width: 20px;
+    height: 20px;
+    font-size: 0.85rem;
+  }
+
+  /* Make quantity number smaller */
+  .cart-dropdown .quantity-display {
+    font-size: 0.8rem;
+    min-width: 18px;
+    padding: 0 4px;
+  }
+
+  /* Make the summary section more compact */
+  .cart-summary {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+    padding: 0.6rem 0.75rem; /* Reduced padding */
+  }
+
+  /* Reduce font size for total */
+  .cart-summary .total {
+    font-size: 0.9rem;
+    text-align: center;
+  }
+
+  /* Make the final button smaller */
+  .go-to-cart-btn {
+    width: 100%;
+    text-align: center;
+    padding: 0.6rem; /* Reduced padding */
+    font-size: 0.9rem;
+  }
+}

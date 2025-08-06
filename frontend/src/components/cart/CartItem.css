@@ -82,3 +82,43 @@
 .remove-btn:hover {
   opacity: 1;
 }
+@media (max-width: 600px) {
+  .cart-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .cart-item-image {
+    width: 70px;
+    height: 70px;
+  }
+
+  .cart-item-details {
+    width: 100%;
+  }
+
+  .cart-item-name {
+    font-size: 1em;
+  }
+
+  .cart-item-price-quantity {
+    font-size: 0.9em;
+  }
+
+  .cart-item-actions {
+    width: 100%;
+    justify-content: flex-start;
+    gap: 0.75rem;
+  }
+
+  .quantity-btn {
+    width: 26px;
+    height: 26px;
+    font-size: 1rem;
+  }
+
+  .remove-btn {
+    font-size: 1.3em;
+  }
+}

@@ -91,9 +91,51 @@
 /* Mobile Responsive Cart Page */
 @media (max-width: 992px) {
   .cart-layout {
-    grid-template-columns: 1fr; /* Stack on smaller screens */
+    /* Switch to a single column layout */
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem; /* add space between cart items and summary */
   }
+
   .cart-summary-card {
-    position: static; /* Unstick the summary card */
+    position: static; 
+    width: 100%;
+  }
+
+  .cart-page {
+    padding: 1rem;
+  }
+
+  .cart-item {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+  }
+
+  .cart-item img {
+    width: 80px;
+    height: auto;
+    border-radius: 4px;
+  }
+
+  .cart-item-details {
+    flex: 1;
+  }
+
+  .cart-item-price,
+  .cart-item-qty {
+    font-size: 0.95rem;
+  }
+
+  .cart-summary-card h2 {
+    font-size: 1.2rem;
+  }
+
+  .cart-summary-card .checkout-button {
+    display: block;
+    width: 100%;
+    margin-top: 1rem;
+    padding: 0.75rem;
+    font-size: 1rem;
   }
 }
