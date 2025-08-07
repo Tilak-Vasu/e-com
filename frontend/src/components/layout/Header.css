@@ -133,7 +133,7 @@ font-family: 'Georgia', serif;
 /* Login/Register link styling */
 .login-register-link {
   background-color: var(--color-primary);
-  color: white !important;
+  color: white;
   border-radius: var(--border-radius);
   padding: 12px 24px;
   font-weight: 600;
