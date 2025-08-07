@@ -25,7 +25,7 @@ const HomePage: React.FC = () => {
   });
   
   const [currentPage, setCurrentPage] = useState(1);
-  const productsPerPage = 9; // UPDATED: Changed from 10 to 9
+  const productsPerPage = 8; // UPDATED: Changed from 10 to 9
 
   // --- DATA PROCESSING & FILTERING ---
 

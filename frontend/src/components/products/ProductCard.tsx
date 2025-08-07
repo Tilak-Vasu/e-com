@@ -74,7 +74,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
             className="add-to-cart-btn"
             title={!isSignedIn ? 'Log in to add to cart' : 'Add to cart'}
           >
-            🛒 Add to Cart
+            🛒
           </button>
         )}
       </div>
