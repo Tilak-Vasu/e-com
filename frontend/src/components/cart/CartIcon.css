@@ -1,6 +1,7 @@
 .cart-icon-container {
   position: relative;
 }
+
 .cart-button {
   position: relative;
   background: none;
@@ -10,11 +11,15 @@
   font-family: inherit;
   font-weight: 500;
   padding: 5px 10px;
+  /* Added for alignment */
+  display: flex;
+  align-items: center;
 }
+
 .cart-badge {
   position: absolute;
-  top: -5px;
-  right: -5px;
+  top: -8px; /* Adjusted for better placement with flex alignment */
+  right: 28px; /* Adjusted for better placement */
   background-color: red;
   color: white;
   border-radius: 50%;
@@ -36,5 +41,7 @@
     height: 18px;
     font-size: 0.7rem;
     border-width: 1.5px;
+    top: -6px;
+    right: 25px;
   }
 }

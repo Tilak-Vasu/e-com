@@ -3,6 +3,7 @@
 import React from 'react';
 import { NavLink, Link } from 'react-router-dom';
 import { SignedIn, SignedOut, UserButton } from '@clerk/clerk-react';
+import { Heart, Package } from 'lucide-react';
 import CartIcon from '../cart/CartIcon';
 import './Header.css';
 
@@ -14,11 +15,21 @@ const Header: React.FC = () => {
       <nav className="main-nav">
         <ul>
           {/* These links are always visible */}
-          <li><NavLink to="/liked">❤</NavLink></li>
+          <li>
+            <NavLink to="/liked" className="nav-icon-link">
+              <Heart size={20} />
+              <span className="nav-text">Liked</span>
+            </NavLink>
+          </li>
           
           {/* --- This block will only render if the user is signed IN --- */}
           <SignedIn>
-            <li><NavLink to="/orders">My Orders</NavLink></li>
+            <li>
+              <NavLink to="/orders" className="nav-icon-link">
+                <Package size={20} />
+                <span className="nav-text">My Orders</span>
+              </NavLink>
+            </li>
             <li><UserButton afterSignOutUrl="/" /></li>
           </SignedIn>
 

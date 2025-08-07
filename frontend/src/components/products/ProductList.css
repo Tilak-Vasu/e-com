@@ -1,27 +1,74 @@
+/* ProductList.css - Mobile-First Responsive Design with 4 Cards Per Row */
+
 .product-list {
   display: grid;
+  grid-template-columns: 1fr; /* Default to 1 column for mobile */
   gap: 1.5rem;
-  grid-template-columns: repeat(4, 1fr);
-}
-
-.product-card img {
-  height: 230px; /* or 240px */
-  object-fit: cover;
+  padding: 1rem 0;
   width: 100%;
-  border-top-left-radius: var(--border-radius);
-  border-top-right-radius: var(--border-radius);
 }
 
-/* Responsive Grid */
-@media (max-width: 1200px) {
+/* Base Mobile Layout - 1 column for very small screens */
+@media (max-width: 320px) {
   .product-list {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+    padding: 0.75rem 0;
   }
 }
 
-@media (max-width: 768px) {
+/* Mobile Portrait - 1 column for small phones */
+@media (min-width: 321px) and (max-width: 480px) {
   .product-list {
     grid-template-columns: 1fr;
+    gap: 1rem;
+    padding: 1rem 0;
+  }
+}
+
+/* Mobile Landscape & Small Tablets - 2 columns */
+@media (min-width: 481px) and (max-width: 768px) {
+  .product-list {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+    padding: 1rem 0;
+  }
+}
+
+/* Tablets - 2 columns */
+@media (min-width: 769px) and (max-width: 992px) {
+  .product-list {
+    grid-template-columns: repeat(2, 1fr);
     gap: 1.5rem;
+    padding: 1.5rem 0;
+  }
+}
+
+/* Small Desktop - 3 columns */
+@media (min-width: 993px) and (max-width: 1199px) {
+  .product-list {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+    padding: 1.5rem 0;
+  }
+}
+
+/* Medium Desktop and above - 4 columns (MAIN CHANGE) */
+@media (min-width: 1200px) {
+  .product-list {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.5rem;
+    padding: 2rem 0;
+  }
+}
+
+/* Optional: Adjust gap for very large screens to prevent cards from being too spread out */
+@media (min-width: 1600px) {
+  .product-list {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 2rem;
+    padding: 2rem 0;
+    max-width: 1400px; /* Optional: limit max width to prevent cards from becoming too wide */
+    margin: 0 auto;
   }
 }

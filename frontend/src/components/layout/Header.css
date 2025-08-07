@@ -1,3 +1,5 @@
+/* Complete Header.css with Lucide React Icon Integration */
+
 .main-header {
   display: flex;
   justify-content: space-between;
@@ -14,7 +16,7 @@
 
 .logo {
   font-size: 2.2rem; /* 🔥 Bigger, more prominent */
-  font-weight: 800;
+  font-weight: 750;
   color: var(--color-primary-dark);
   text-decoration: none;
   font-family: 'Segoe UI', sans-serif;
@@ -27,13 +29,14 @@
   gap: 32px;
 }
 
+/* Base styling for all navigation items */
 .main-nav a,
 .logout-btn,
 .cart-button {
   color: var(--color-text-light);
   font-weight: 500;
   padding: 12px 18px;
-  font-size: 1.15rem;
+  font-size: 1.2rem;
   border-radius: var(--border-radius);
   transition: color 0.2s, background-color 0.2s;
   background: none;
@@ -41,7 +44,6 @@
   cursor: pointer;
   font-family: inherit;
   text-decoration: none;
-
 }
 
 .main-nav a:hover,
@@ -54,28 +56,142 @@
   color: var(--color-primary);
   font-weight: bold;
 }
+
+/* Enhanced styles for icon navigation links */
+.nav-icon-link {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 12px 18px;
+  border-radius: var(--border-radius);
+  transition: all 0.2s ease;
+  text-decoration: none;
+  color: var(--color-text-light);
+  font-weight: 500;
+  font-size: 1.2rem;
+}
+
+.nav-icon-link:hover {
+  color: var(--color-primary);
+  background-color: rgba(0, 123, 255, 0.1);
+}
+
+.nav-icon-link.active {
+  color: var(--color-primary);
+  font-weight: bold;
+  background-color: rgba(0, 123, 255, 0.15);
+}
+
+.nav-icon-link.active svg {
+  color: var(--color-primary);
+}
+
+.nav-text {
+  font-weight: inherit;
+  font-size: inherit;
+}
+
+/* Enhanced cart button styling */
+.cart-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 12px 18px;
+  border-radius: var(--border-radius);
+  transition: all 0.2s ease;
+  color: var(--color-text-light);
+  font-weight: 500;
+  font-size: 1.2rem;
+}
+
+.cart-button:hover {
+  color: var(--color-primary);
+  background-color: rgba(0, 123, 255, 0.1);
+}
+
+.cart-badge {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  background-color: var(--color-danger, #dc3545);
+  color: white;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: bold;
+  border: 2px solid white;
+}
+
+/* Login/Register link styling */
+.login-register-link {
+  background-color: var(--color-primary);
+  color: white !important;
+  border-radius: var(--border-radius);
+  padding: 12px 24px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.login-register-link:hover {
+  background-color: var(--color-primary-dark);
+  color: white !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 123, 255, 0.3);
+}
+
+/* Mobile responsive adjustments */
 @media (max-width: 768px) {
   .main-header {
-    padding: 0 1rem;
-    height: auto;
+    padding: 0 1rem; /* Adjust padding for mobile */
+    height: 60px; /* A fixed, smaller height for mobile */
+    position: fixed; /* Make it fixed to stick to the top */
+    width: 100%; /* Ensure it spans the full width */
+    top: 0;
+    left: 0;
+    box-sizing: border-box; /* Include padding in the width calculation */
   }
 
   .logo {
     font-size: 1.5rem; /* smaller logo text */
-    
   }
 
   .main-nav ul {
-    gap: 8px;
-    
+    gap: 0.5rem; /* Reduce the gap between icons */
   }
 
+  /* Hide text labels on mobile, show only icons */
+  .nav-text {
+    display: none;
+  }
+  
   /* Consistent font for ALL nav items */
   .main-nav a,
   .logout-btn,
   .cart-button,
-  .welcome-message span {
-    font-size: 0.75rem; /* make everything match Cart */
-    padding: 6px 8px;
+  .nav-icon-link {
+    font-size: 0.875rem; /* A slightly more readable size */
+    padding: 8px;
+    gap: 0;
+  }
+
+  .cart-badge {
+    top: 2px;
+    right: 2px;
+    width: 16px;
+    height: 16px;
+    font-size: 0.65rem;
+  }
+
+  .login-register-link {
+    padding: 8px 12px;
+    font-size: 0.8rem;
   }
 }

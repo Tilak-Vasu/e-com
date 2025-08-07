@@ -1,11 +1,11 @@
-// src/pages/HomePage.tsx
+// Updated HomePage.tsx with mobile filter toggle
 
-import React, { useState, useMemo, type ChangeEvent } from 'react';
+import React, { useState, useMemo, useEffect, type ChangeEvent } from 'react';
 import useProducts from '../hooks/useProducts';
 import ProductList from '../components/products/ProductList';
 import Pagination from '../components/common/Pagination';
 import SearchBar from '../components/products/SearchBar';
-import Filter from '../components/products/Filter'; // We will update this component
+import Filter from '../components/products/Filter';
 import './HomePage.css';
 
 const HomePage: React.FC = () => {
@@ -14,39 +14,74 @@ const HomePage: React.FC = () => {
   // --- STATE MANAGEMENT ---
   const [searchTerm, setSearchTerm] = useState('');
   const [priceRange, setPriceRange] = useState({ min: '', max: '' });
-  
-  // NEW: State for the selected category filter
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  
   const [activeFilters, setActiveFilters] = useState({
     min: 0,
     max: Infinity,
     category: 'all',
   });
-  
   const [currentPage, setCurrentPage] = useState(1);
-  const productsPerPage = 8; // UPDATED: Changed from 10 to 9
+  const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  const productsPerPage = 8;
+
+  // Check if we're on mobile
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 992);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  // Close mobile filter when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (isMobile && isMobileFilterOpen) {
+        const target = event.target as Element;
+        if (!target.closest('.filter-sidebar') && !target.closest('.mobile-filter-toggle')) {
+          setIsMobileFilterOpen(false);
+        }
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isMobile, isMobileFilterOpen]);
+
+  // Prevent body scroll when mobile filter is open
+  useEffect(() => {
+    if (isMobile && isMobileFilterOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isMobile, isMobileFilterOpen]);
 
   // --- DATA PROCESSING & FILTERING ---
-
-  // Get a unique list of all categories from the product data
   const categories = useMemo(() => {
     const allCategories = products.map(p => p.category);
     return ['all', ...Array.from(new Set(allCategories))];
   }, [products]);
 
-  // Updated filtering logic to include category
   const filteredProducts = useMemo(() => {
     return products.filter(product => {
       const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesPrice = product.price >= activeFilters.min && product.price <= activeFilters.max;
-      // Add a check for the category
       const matchesCategory = activeFilters.category === 'all' || product.category === activeFilters.category;
       return matchesSearch && matchesPrice && matchesCategory;
     });
   }, [products, searchTerm, activeFilters]);
 
-  // Pagination logic remains the same
+  // Pagination logic
   const indexOfLastProduct = currentPage * productsPerPage;
   const indexOfFirstProduct = indexOfLastProduct - productsPerPage;
   const currentProducts = filteredProducts.slice(indexOfFirstProduct, indexOfLastProduct);
@@ -61,19 +96,27 @@ const HomePage: React.FC = () => {
   const handlePriceChange = (event: ChangeEvent<HTMLInputElement>) => {
     setPriceRange(prev => ({ ...prev, [event.target.name]: event.target.value }));
   };
-  
-  // NEW: Handler for when a category is selected
+
   const handleCategoryChange = (event: ChangeEvent<HTMLSelectElement>) => {
-      setSelectedCategory(event.target.value);
+    setSelectedCategory(event.target.value);
   };
 
   const handleApplyFilter = () => {
     setActiveFilters({
       min: priceRange.min ? Number(priceRange.min) : 0,
       max: priceRange.max ? Number(priceRange.max) : Infinity,
-      category: selectedCategory, // Apply the selected category
+      category: selectedCategory,
     });
     setCurrentPage(1);
+    
+    // Close mobile filter after applying
+    if (isMobile) {
+      setIsMobileFilterOpen(false);
+    }
+  };
+
+  const toggleMobileFilter = () => {
+    setIsMobileFilterOpen(!isMobileFilterOpen);
   };
 
   // --- RENDER LOGIC ---
@@ -82,43 +125,62 @@ const HomePage: React.FC = () => {
   }
 
   return (
-    // This container div will enforce the max-width and central padding
-    // <div className="container">
-      <div className="home-page-layout">
-        <aside className="filter-sidebar">
-          <Filter
-            priceRange={priceRange}
-            onPriceChange={handlePriceChange}
-            onApplyFilter={handleApplyFilter}
-            categories={categories}
-            selectedCategory={selectedCategory}
-            onCategoryChange={handleCategoryChange}
-          />
-        </aside>
+    <>
+      {/* Mobile Filter Toggle Button */}
+      {isMobile && (
+        <button 
+          className={`mobile-filter-toggle ${isMobileFilterOpen ? 'active' : ''}`}
+          onClick={toggleMobileFilter}
+        >
+          {isMobileFilterOpen ? '✕ Close Filters' : '⚙️ Show Filters'}
+        </button>
+      )}
 
-        <main className="product-content">
-  <div className="product-wrapper">
-    <SearchBar searchTerm={searchTerm} onSearchChange={handleSearchChange} />
-
-    {filteredProducts.length > 0 ? (
-      <>
-        <ProductList products={currentProducts} />
-        <Pagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onPageChange={(page) => setCurrentPage(page)}
+      {/* Mobile Overlay */}
+      {isMobile && isMobileFilterOpen && (
+        <div 
+          className="mobile-filter-overlay"
+          onClick={() => setIsMobileFilterOpen(false)}
         />
-      </>
-    ) : (
-      <div className="page-status">
-        <h3>No products found</h3>
-        <p>Try adjusting your search or filter settings.</p>
+      )}
+
+      {/* Filter Sidebar */}
+      <aside className={`filter-sidebar ${isMobile && isMobileFilterOpen ? 'mobile-open' : ''}`}>
+        <Filter
+          priceRange={priceRange}
+          onPriceChange={handlePriceChange}
+          onApplyFilter={handleApplyFilter}
+          categories={categories}
+          selectedCategory={selectedCategory}
+          onCategoryChange={handleCategoryChange}
+        />
+      </aside>
+
+      {/* Main Content */}
+      <div className="home-page-layout">
+        <main className="product-content">
+          <div className="product-wrapper">
+            <SearchBar searchTerm={searchTerm} onSearchChange={handleSearchChange} />
+
+            {filteredProducts.length > 0 ? (
+              <>
+                <ProductList products={currentProducts} />
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPageChange={(page) => setCurrentPage(page)}
+                />
+              </>
+            ) : (
+              <div className="page-status">
+                <h3>No products found</h3>
+                <p>Try adjusting your search or filter settings.</p>
+              </div>
+            )}
+          </div>
+        </main>
       </div>
-    )}
-  </div>
-</main>
-      </div>
-    
+    </>
   );
 };
 

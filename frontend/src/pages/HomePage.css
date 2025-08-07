@@ -1,25 +1,37 @@
+/* Homepage Layout with Absolute Positioned Filter Sidebar */
+
 .home-page-layout {
-  display: grid;
-  grid-template-columns: 340px 1fr; /* Increased filter width */
-  gap: 3rem; /* More breathing room */
-  padding: 2rem;
+  margin-left: 200px; /* Reduced margin to give more space to products */
+  /* UPDATED: Reduced right-side padding to give product grid more space */
+  margin-right: -90px;
+  padding: 2rem 1rem;
+  min-height: 100vh;
 }
 
 .filter-sidebar {
-  padding: 0; /* No extra white wrapper space */
+  position: absolute;
+  left: 20px;
+  top: 108px;
+  width: 320px; /* Slightly reduced sidebar width */
+  padding: 1rem;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  z-index: 10;
+  overflow-y: auto;
 }
 
 .product-content {
   display: flex;
   flex-direction: column;
   min-width: 0;
+  width: 100%;
 }
 
 .product-wrapper {
   width: 100%;
   max-width: 100%;
-  padding-right: 2rem; /* 👈 Right-side space */
-  padding-left: 0.5rem;
+  padding: 0; /* Remove extra padding since grid gap handles spacing */
 }
 
 .page-status {
@@ -36,27 +48,156 @@
 .page-status h3 {
   font-size: 1.5em;
   margin-bottom: 0.5rem;
+  color: var(--color-text-dark);
 }
 
-/* --- Responsive Layouts --- */
-@media (max-width: 1200px) {
+
+
+/* Mobile Filter Toggle Button */
+.mobile-filter-toggle {
+  display: none;
+  position: fixed;
+  top: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  border-radius: 25px;
+  padding: 12px 24px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  z-index: 1001;
+  box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+  transition: all 0.3s ease;
+}
+
+.mobile-filter-toggle:hover {
+  background: var(--color-primary-dark);
+  transform: translateX(-50%) scale(1.05);
+}
+
+.mobile-filter-toggle.active {
+  background: #dc3545;
+}
+
+.mobile-filter-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 999;
+}
+
+/* Tablet Portrait */
+@media (max-width: 1024px) {
   .home-page-layout {
-    grid-template-columns: 280px 1fr;
+    margin-left: 280px;
+    padding: 1.5rem 1rem 1.5rem 0.5rem;
+  }
+  
+  .filter-sidebar {
+    width: 260px;
+    left: 15px;
   }
 }
 
+/* Mobile and Small Tablets */
 @media (max-width: 992px) {
   .home-page-layout {
-    grid-template-columns: 1fr;
-    gap: 1.5rem;
-  }
-
-  .filter-sidebar,
-  .product-content {
-    grid-column: 1 / -1;
+    margin-left: 0;
+    padding: 1rem;
   }
 
   .filter-sidebar {
-    position: static;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    height: auto;
+    max-height: 60vh; /* Limit to 60% of viewport height */
+    background: white;
+    border-radius: 0 0 16px 16px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    padding: 1rem;
+    z-index: 1000;
+    transform: translateY(-100%); /* Hidden by default */
+    transition: transform 0.3s ease;
+    overflow-y: auto;
+  }
+
+  .filter-sidebar.mobile-open {
+    transform: translateY(0);
+  }
+
+  .mobile-filter-toggle {
+    display: block;
+  }
+
+  .mobile-filter-overlay {
+    display: block;
+  }
+
+  .product-content {
+    margin-top: 0;
+    padding-top: 1rem;
+  }
+}
+
+/* Mobile Landscape */
+@media (max-width: 768px) {
+  .home-page-layout {
+    padding: 0.75rem;
+  }
+
+  .filter-sidebar {
+    max-height: 60vh; /* Reduce height for landscape orientation */
+    padding: 0.75rem;
+  }
+
+  .mobile-filter-toggle {
+    top: 70px;
+    padding: 10px 20px;
+    font-size: 0.85rem;
+  }
+}
+
+/* Mobile Portrait */
+@media (max-width: 480px) {
+  .home-page-layout {
+    padding: 5rem;
+    align-items: center;
+  }
+
+  .filter-sidebar {
+    padding: 1rem 0.75rem;
+    border-radius: 0 0 12px 12px;
+  }
+
+  .mobile-filter-toggle {
+    top: 65px;
+    padding: 8px 16px;
+    font-size: 0.8rem;
+  }
+
+  .product-content {
+    padding-top: 0.5rem;
+  }
+}
+
+/* Very Small Screens */
+@media (max-width: 320px) {
+  .home-page-layout {
+    padding: 0.25rem;
+  }
+
+  .mobile-filter-toggle {
+    padding: 6px 12px;
+    font-size: 0.75rem;
   }
 }
