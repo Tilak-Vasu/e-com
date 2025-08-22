@@ -1,5 +1,3 @@
-// Updated HomePage.tsx with mobile filter toggle
-
 import React, { useState, useMemo, useEffect, type ChangeEvent } from 'react';
 import useProducts from '../hooks/useProducts';
 import ProductList from '../components/products/ProductList';
@@ -9,7 +7,8 @@ import Filter from '../components/products/Filter';
 import './HomePage.css';
 
 const HomePage: React.FC = () => {
-  const { products, loading } = useProducts();
+  // ✅ Destructure the new context value: `fetchProducts` and `error`
+  const { products, loading, error, fetchProducts } = useProducts();
 
   // --- STATE MANAGEMENT ---
   const [searchTerm, setSearchTerm] = useState('');
@@ -31,10 +30,8 @@ const HomePage: React.FC = () => {
     const checkMobile = () => {
       setIsMobile(window.innerWidth <= 992);
     };
-    
     checkMobile();
     window.addEventListener('resize', checkMobile);
-    
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
@@ -60,7 +57,6 @@ const HomePage: React.FC = () => {
     } else {
       document.body.style.overflow = 'unset';
     }
-    
     return () => {
       document.body.style.overflow = 'unset';
     };
@@ -108,8 +104,7 @@ const HomePage: React.FC = () => {
       category: selectedCategory,
     });
     setCurrentPage(1);
-    
-    // Close mobile filter after applying
+
     if (isMobile) {
       setIsMobileFilterOpen(false);
     }
@@ -118,17 +113,27 @@ const HomePage: React.FC = () => {
   const toggleMobileFilter = () => {
     setIsMobileFilterOpen(!isMobileFilterOpen);
   };
+  
+  // ✅ Use the new `fetchProducts` function for refreshing the list
+  const handleLikeToggle = async () => {
+    await fetchProducts(); 
+  };
 
   // --- RENDER LOGIC ---
   if (loading) {
     return <div className="page-status">Loading products...</div>;
+  }
+  
+  // ✅ Handle the error state from the context
+  if (error) {
+    return <div className="page-status error-message">{error}</div>;
   }
 
   return (
     <>
       {/* Mobile Filter Toggle Button */}
       {isMobile && (
-        <button 
+        <button
           className={`mobile-filter-toggle ${isMobileFilterOpen ? 'active' : ''}`}
           onClick={toggleMobileFilter}
         >
@@ -138,7 +143,7 @@ const HomePage: React.FC = () => {
 
       {/* Mobile Overlay */}
       {isMobile && isMobileFilterOpen && (
-        <div 
+        <div
           className="mobile-filter-overlay"
           onClick={() => setIsMobileFilterOpen(false)}
         />
@@ -164,7 +169,10 @@ const HomePage: React.FC = () => {
 
             {filteredProducts.length > 0 ? (
               <>
-                <ProductList products={currentProducts} />
+                <ProductList
+                  products={currentProducts}
+                  onLikeToggle={handleLikeToggle} // ✅ Pass the updated handler
+                />
                 <Pagination
                   currentPage={currentPage}
                   totalPages={totalPages}

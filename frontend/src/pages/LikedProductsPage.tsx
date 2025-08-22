@@ -1,46 +1,55 @@
-// src/pages/LikedProductsPage.tsx
-
-import React, { useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import useLikedProducts from '../hooks/useLikedProducts';
-import useProducts from '../hooks/useProducts';
+import useApi from '../hooks/useApi';
 import ProductList from '../components/products/ProductList';
 import Button from '../components/common/Button';
-import './LikedProductsPage.css'; // This is a new CSS file
+import type { Product } from '../api/types';
+import './LikedProductsPage.css';
 
 const LikedProductsPage: React.FC = () => {
-  const { likedProductIds } = useLikedProducts();
-  const { products, loading } = useProducts();
+  const api = useApi();
+  const [likedProducts, setLikedProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // useMemo ensures this filtering logic only re-runs when necessary
-  const likedProducts = useMemo(() => {
-    if (loading) return [];
-    // Filter the main product list to find only the products whose IDs are in our liked list
-    return products.filter(product => likedProductIds.includes(product.id));
-  }, [likedProductIds, products, loading]);
+  const fetchLiked = async () => {
+    setLoading(true);
+    try {
+      const response = await api.get('/products/liked/');
+      setLikedProducts(response.data);
+    } catch (error) {
+      console.error("Failed to fetch liked products:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchLiked();
+  }, []);
 
   if (loading) {
-    return <div className="page-status">Loading...</div>;
+    return <div className="page-status">Loading your liked products...</div>;
   }
 
-  // If there are no liked products, show a helpful "empty state" message
   if (likedProducts.length === 0) {
     return (
       <div className="empty-liked-page">
         <h2>You haven't liked any products yet.</h2>
         <p>Click the "Like" button on any product to save it here for later.</p>
         <Link to="/">
-          <Button>Find Products</Button>
+          <Button>Find Products to Like</Button>
         </Link>
       </div>
     );
   }
 
-  // If products have been liked, display them using our reusable ProductList component
   return (
-    <div className="liked-page">
-      <h1>My Liked Products</h1>
-      <ProductList products={likedProducts} />
+    <div className="container liked-page">
+      <h1 style={{ marginTop: '20px', marginLeft:'40px'}}>My Liked Products</h1>
+      <ProductList 
+        products={likedProducts} 
+        onLikeToggle={fetchLiked} // ✅ refresh list after toggle
+      />
     </div>
   );
 };

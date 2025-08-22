@@ -1,54 +1,41 @@
 // src/api/types.ts
 
-/**
- * Defines the structure of a single product object.
- * This is used for mock data and will match the data from a future product API.
- */
-export interface Product {
-  id: number;
-  name: string;
-  category: string;
-  price: number;
-  image: string; // The filename of the image, e.g., 'product-placeholder.webp'
-}
+import type { ReactNode } from "react";
 
-/**
- * Defines the data required to register a new user.
- * This matches the fields expected by the Django backend's UserSerializer.
- */
+// --- USER & AUTH ---
+
 export interface UserRegistrationData {
   username: string;
   email: string;
   password: string;
 }
 
-/**
- * Defines the data required for a user to log in.
- * This matches the fields expected by the Simple JWT TokenObtainPairView.
- */
 export interface UserCredentials {
   username: string;
   password: string;
 }
 
-/**
- * Defines the structure of the successful response from the JWT login endpoint.
- */
 export interface AuthTokenResponse {
   access: string;
   refresh: string;
 }
 
-/**
- * Defines the structure of an item within the shopping cart.
- * It extends the Product type with a quantity.
- */
+// --- PRODUCT ---
+
+export interface Product {
+  is_liked: boolean; // Should be a boolean
+  id: number;
+  name: string;
+  category: string;
+  price: number;
+  image: string | null; // Image can be null
+}
 
 export interface CartItem extends Product {
   quantity: number;
 }
 
-
+// --- ORDER ---
 
 export interface ShippingInfo {
   fullName: string;
@@ -58,11 +45,33 @@ export interface ShippingInfo {
   pincode: string;
 }
 
+// This represents an order received from the backend (e.g., in order history)
 export interface Order {
   id: string;
-  date: string;
+  created_at: string;
   items: CartItem[];
-  totalAmount: number;
-  paymentMethod: 'Credit Card' | 'Pay on Delivery';
-  shippingInfo: ShippingInfo; // <-- ADD THIS LINE
+  total_amount: number; // Matches backend model
+  payment_method: 'Credit Card' | 'Pay on Delivery';
+  shipping_info: { // Matches backend JSONField structure
+    full_name: string;
+    address: string;
+    city: string;
+    state: string;
+    pin_code: string;
+  };
+}
+
+// --- V V V THIS IS THE FIX V V V ---
+// This is the specific data structure for CREATING a new order.
+// It perfectly matches what your Django OrderCreateSerializer expects.
+export interface OrderPayload {
+  items: { product: number; quantity: number }[];
+  shipping_info: {
+    full_name: string;
+    address: string;
+    city: string;
+    state: string;
+    pin_code: string;
+  };
+  payment_method: 'Credit Card' | 'Pay on Delivery';
 }

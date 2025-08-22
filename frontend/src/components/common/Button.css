@@ -25,7 +25,7 @@
 
 /* Secondary button style */
 .btn-secondary {
-  background-color: #6c757d;
+  background-color: #1864a7;
   color: white;
   border: 1px solid #6c757d;
 }
@@ -56,4 +56,31 @@
 .btn:disabled {
   cursor: not-allowed;
   opacity: 0.65;
+}
+
+/* --- ADD THIS NEW LAYOUT CLASS --- */
+/* This container uses Flexbox to make the buttons inside it have equal width */
+.modal-actions {
+    display: flex;          /* Activates Flexbox */
+    gap: 1rem;              /* Creates space between the buttons */
+    margin-top: 1.5rem;     /* Adds space above the button group */
+}
+
+/* This targets any button inside our new container */
+.modal-actions .btn {
+    flex: 1;                /*  <-- THE KEY! Makes buttons grow to fill space equally */
+}
+
+
+/* --- ADD THIS NEW COLOR CLASS --- */
+/* The orange color for the primary action button, as seen in your image */
+.btn-submit {
+  background-color: #f97316; /* A vibrant orange */
+  color: white;
+  border: 1px solid #f97316;
+}
+
+.btn-submit:hover:not(:disabled) {
+  background-color: #ea580c; /* A slightly darker orange for hover */
+  border-color: #ea580c;
 }

@@ -1,0 +1,107 @@
+/* --- Styles for ProductFormModal.css --- */
+
+/* Modal Overlay: Dark, semi-transparent background */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+/* Modal Content: The white container for the form */
+.modal-content {
+  background: white;
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  width: 100%;
+  max-width: 500px; /* Controls the max width of the modal */
+}
+
+.modal-content h2 {
+  margin-top: 0;
+  margin-bottom: 1.5rem;
+  color: #1f2937;
+}
+
+/* Form Styling */
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: #374151;
+}
+
+.form-group input,
+.form-group textarea,
+.form-group select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 1rem;
+  box-sizing: border-box; /* Important for consistent sizing */
+}
+
+.form-group input[type="file"] {
+  padding: 8px;
+}
+
+/* --- REVISED BUTTONS SECTION --- */
+
+/* Base styles for all buttons (can be in a separate Button.css) */
+.btn {
+  padding: 12px 20px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 600;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+/* Layout container for the modal buttons */
+.modal-actions {
+    display: flex;          /* Activates Flexbox */
+    gap: 1rem;              /* Creates space between the buttons */
+    margin-top: 1.5rem;     /* Adds space above the button group */
+}
+
+/* This rule makes both buttons expand to have equal width */
+.modal-actions .btn {
+    flex: 1;                
+}
+
+/* Secondary / Cancel button style */
+.btn-secondary {
+  background-color: #6c757d;
+  color: white;
+  border: 1px solid #6c757d;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background-color: #5a6268;
+  border-color: #545b62;
+}
+
+/* Submit / Create button style (with orange from screenshot) */
+.btn-submit {
+  background-color: #f97316; /* Vibrant orange */
+  color: white;
+  border: 1px solid #f97316;
+}
+
+.btn-submit:hover:not(:disabled) {
+  background-color: #ea580c; /* Darker orange for hover */
+  border-color: #ea580c;
+}

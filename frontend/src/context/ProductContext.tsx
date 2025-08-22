@@ -1,45 +1,57 @@
-// src/context/ProductContext.ts
-
-import React, { createContext, useState, useEffect, type ReactNode } from 'react';
-import { products as mockProducts } from '../api/mockData';
+import React, {
+createContext,
+useState,
+useEffect,
+useCallback,
+useContext,
+type ReactNode
+} from 'react';
 import type { Product } from '../api/types';
-
-/**
- * Defines the shape of the value provided by the ProductContext.
- */
+import useApi from '../hooks/useApi'; // ✅ Authenticated axios instance
+// --- Context Type ---
 interface ProductContextType {
-  products: Product[];
-  loading: boolean;
-  // You could add more functions here later, e.g., for filtering:
-  // filterByPrice: (min: number, max: number) => void;
+products: Product[];
+loading: boolean;
+error: string | null;
+fetchProducts: () => Promise<void>; // ✅ Can be called from anywhere
 }
-
-// Create the context
-const ProductContext = createContext<ProductContextType | undefined>(undefined);
-export default ProductContext;
-
-
-// --- Provider Component ---
-
-/**
- * The ProductProvider component holds the global state for the product catalog.
- */
+// --- Create Context ---
+export const ProductContext = createContext<ProductContextType | undefined>(undefined);
+// --- Provider ---
 export const ProductProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-
-  useEffect(() => {
-    // In a real-world application, you would fetch products from an API here.
-    // For this project, we are loading them from a static mock data file.
-    setProducts(mockProducts);
-    setLoading(false);
-  }, []);
-
-  const value: ProductContextType = { products, loading };
-
-  return React.createElement(
-    ProductContext.Provider,
-    { value },
-    children
-  );
+const [products, setProducts] = useState<Product[]>([]);
+const [loading, setLoading] = useState(true);
+const [error, setError] = useState<string | null>(null);
+const api = useApi();
+// ✅ Wrapped fetching logic
+const fetchProducts = useCallback(async () => {
+setLoading(true);
+setError(null);
+try {
+const response = await api.get<Product[]>('/products/');
+setProducts(response.data);
+} catch (err) {
+console.error("Failed to fetch products:", err);
+setError("Could not load products. Please try again later.");
+} finally {
+setLoading(false);
+}
+}, [api]);
+// ✅ Initial fetch
+useEffect(() => {
+fetchProducts();
+}, [fetchProducts]);
+return (
+<ProductContext.Provider value={{ products, loading, error, fetchProducts }}>
+{children}
+</ProductContext.Provider>
+);
+};
+// --- Custom Hook ---
+export const useProducts = () => {
+const context = useContext(ProductContext);
+if (!context) {
+throw new Error('useProducts must be used within a ProductProvider');
+}
+return context;
 };

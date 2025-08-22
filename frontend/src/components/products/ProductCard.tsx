@@ -1,41 +1,45 @@
-
 import React from 'react';
 import type { Product } from '../../api/types';
-import { useUser } from '@clerk/clerk-react'; // <-- IMPORT Clerk's hook
+
+// Auth hook & API
+import { useAuth } from '../../hooks/useAuth';
+import { toggleLikeProductAPI } from '../../api';
+
+// Cart hook
 import useCart from '../../hooks/useCart';
-import useLikedProducts from '../../hooks/useLikedProducts';
+
+// Assets & styles
 import productImage from '../../assets/images/product-placeholder.webp';
 import './ProductCard.css';
 
 interface ProductCardProps {
   product: Product;
+  onLikeToggle: () => void;
 }
 
-const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
-  // --- THIS IS THE KEY CHANGE ---
-  // We use Clerk's `useUser` hook. `isSignedIn` will be true or false.
-  const { isSignedIn } = useUser(); 
-  
+const ProductCard: React.FC<ProductCardProps> = ({ product, onLikeToggle }) => {
+  const { user } = useAuth();
   const { cartItems, addToCart, decreaseQuantity } = useCart();
-  const { likeProduct, unlikeProduct, isLiked } = useLikedProducts();
-
   const itemInCart = cartItems.find(item => item.id === product.id);
-  const liked = isLiked(product.id);
 
-  const handleToggleLike = () => {
-    if (!isSignedIn) {
+  const isLiked = product.is_liked;
+
+  const handleToggleLike = async () => {
+    if (!user) {
       alert('Please log in to like products.');
       return;
     }
-    if (liked) {
-      unlikeProduct(product.id);
-    } else {
-      likeProduct(product.id);
+    try {
+      await toggleLikeProductAPI(product.id);
+      onLikeToggle(); // ✅ refresh product list
+    } catch (error) {
+      console.error("Failed to toggle like status:", error);
+      alert("Something went wrong. Please try again.");
     }
   };
 
   const handleInitialAddToCart = () => {
-    if (!isSignedIn) {
+    if (!user) {
       alert('Please log in to add items to your cart.');
       return;
     }
@@ -48,17 +52,16 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
       <div className="product-info">
         <p className="product-category">{product.category}</p>
         <h3 className="product-name">{product.name}</h3>
-        <p className="product-price">${product.price.toFixed(2)}</p>
+        <p className="product-price">${product.price}</p>
       </div>
       <div className="product-actions">
-        {/* Use the `isSignedIn` boolean to disable the buttons */}
         <button
           onClick={handleToggleLike}
-          disabled={!isSignedIn}
-          className={`like-btn ${liked ? 'liked' : ''}`}
-          title={!isSignedIn ? 'Log in to like' : (liked ? 'Unlike product' : 'Like product')}
+          disabled={!user}
+          className={`like-btn ${isLiked ? 'liked' : ''}`}
+          title={!user ? 'Log in to like' : (isLiked ? 'Unlike product' : 'Like product')}
         >
-          {liked ? '❤️ Unlike' : '🤍 Like'}
+          {isLiked ? '❤️' : '🤍'}
         </button>
 
         {itemInCart ? (
@@ -70,11 +73,11 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
         ) : (
           <button
             onClick={handleInitialAddToCart}
-            disabled={!isSignedIn}
+            disabled={!user}
             className="add-to-cart-btn"
-            title={!isSignedIn ? 'Log in to add to cart' : 'Add to cart'}
+            title={!user ? 'Log in to add to cart' : 'Add to cart'}
           >
-            🛒
+            Add to Cart
           </button>
         )}
       </div>

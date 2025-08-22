@@ -20,7 +20,10 @@ const CartItem: React.FC<CartItemProps> = ({ item }) => {
         <span className="cart-item-name">{item.name}</span>
         {/* This new wrapper helps with spacing */}
         <div className="cart-item-price-quantity">
-          <span className="cart-item-price">${item.price.toFixed(2)}</span>
+          {/* Ensure item.price is a valid number and fallback to '0.00' if not */}
+          <span className="cart-item-price">
+            ${item.price && !isNaN(Number(item.price)) ? Number(item.price).toFixed(2) : '0.00'}
+          </span>
           <span className="cart-item-quantity">Qty: {item.quantity}</span>
         </div>
       </div>
