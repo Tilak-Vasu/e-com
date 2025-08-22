@@ -1,7 +1,7 @@
 // src/hooks/useProducts.ts
 
 import { useContext } from 'react';
-import ProductContext from '../context/ProductContext';
+import { ProductContext } from '../context/ProductContext';
 
 /**
  * A custom hook to access the ProductContext.

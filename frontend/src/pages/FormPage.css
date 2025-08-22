@@ -1,54 +1,133 @@
+/* src/pages/FormPage.css */
+
+/* --- CSS Variables for a Consistent Theme --- */
+:root {
+  --color-primary: #f97316; /* Vibrant Orange for main actions */
+  --color-primary-light: #fb923c; /* Lighter orange for disabled/loading state */
+  --color-primary-dark: #ea580c; /* Darker orange for hover */
+  --color-link: #2563eb; /* A modern blue for links */
+  --color-text-dark: #1f2937; /* For headings */
+  --color-text-medium: #4b5563; /* For labels and body text */
+  --color-text-light: #6b7280; /* For secondary text */
+  --color-background: #f9fafb; /* Standard light gray page background */
+  --color-white: #ffffff;
+  --color-border: #d1d5db; /* For inputs and separators */
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --border-radius: 8px;
+}
+
+/* --- Main Container --- */
+/* Centers the form card on the page */
 .form-container {
   display: flex;
   justify-content: center;
   align-items: center;
   padding: 2rem;
-  flex-grow: 1;
+  flex-grow: 1; /* Ensures it takes up available vertical space */
+  background-color: var(--color-background);
 }
 
+/* --- The Form Card --- */
+/* The white box containing the form */
 .form-card {
   width: 100%;
-  max-width: 400px;
-  padding: 2rem;
-  background-color: #fff;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  max-width: 420px; /* Slightly wider for a more modern feel */
+  padding: 2.5rem; /* More generous padding */
+  background-color: var(--color-white);
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow-md);
+  text-align: center;
 }
 
 .form-card h2 {
   text-align: center;
   margin-top: 0;
-  margin-bottom: 1.5rem;
+  margin-bottom: 2rem;
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--color-text-dark);
 }
 
+/* --- Form Groups (Label + Input) --- */
 .form-group {
   margin-bottom: 1.5rem;
+  text-align: left; /* Aligns labels and inputs to the left */
 }
 
 .form-group label {
   display: block;
   margin-bottom: 0.5rem;
-  font-weight: 600;
+  font-weight: 500;
+  color: var(--color-text-medium);
 }
 
+/* --- Input Styling (from your common Input component) --- */
+.form-group input {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  font-size: 1rem;
+  color: var(--color-text-dark);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* Adds a subtle "glow" when an input is focused for better UX */
+.form-group input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.15);
+}
+
+/* --- Error Message --- */
 .form-error {
-  color: #dc3545;
-  background-color: #f8d7da;
-  border: 1px solid #f5c6cb;
-  padding: 10px;
-  border-radius: 5px;
+  color: #991b1b; /* Darker red for better readability */
+  background-color: #fee2e2;
+  border: 1px solid #fecaca;
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
   text-align: center;
   margin-bottom: 1.5rem;
+  font-size: 0.9rem;
 }
 
+/* --- Submit Button (Covers Login/Register) --- */
+/* Targets the Button component from your pages */
+.form-card button {
+  width: 100%; /* Makes the button span the full width of the form card */
+  padding: 14px 20px;
+  font-size: 1rem;
+  font-weight: 600;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s ease, opacity 0.2s ease;
+  margin-top: 0.5rem;
+  background-color: var(--color-primary-dark);
+  color: var(--color-white);
+}
+
+.form-card button:hover:not(:disabled) {
+  background-color: orangered;
+}
+
+/* Style for the button when it's loading/disabled */
+.form-card button:disabled {
+  background-color: var(--color-primary-light);
+  cursor: not-allowed;
+  opacity: 0.8;
+}
+
+/* --- Link to Switch Forms --- */
 .form-switch {
   margin-top: 1.5rem;
-  text-align: center;
+  color: var(--color-text-light);
   font-size: 0.9em;
 }
 
 .form-switch a {
-  color: #007bff;
+  color: var(--color-link);
+  font-weight: 500;
   text-decoration: none;
 }
 .form-switch a:hover {
