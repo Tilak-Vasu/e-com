@@ -52,6 +52,44 @@
   width: 100%;
   border-collapse: collapse;
   text-align: left;
+  table-layout: fixed; /* THIS IS KEY - Forces consistent column widths */
+}
+
+/* Define specific column widths for better alignment */
+.product-list-table th:nth-child(1), /* Image */
+.product-list-table td:nth-child(1) {
+  width: 80px;
+  text-align: center;
+}
+
+.product-list-table th:nth-child(2), /* Name */
+.product-list-table td:nth-child(2) {
+  width: 25%;
+  text-align: left;
+}
+
+.product-list-table th:nth-child(3), /* Category */
+.product-list-table td:nth-child(3) {
+  width: 15%;
+  text-align: left;
+}
+
+.product-list-table th:nth-child(4), /* Price */
+.product-list-table td:nth-child(4) {
+  width: 12%;
+  text-align: right;
+}
+
+.product-list-table th:nth-child(5), /* Stock */
+.product-list-table td:nth-child(5) {
+  width: 10%;
+  text-align: center;
+}
+
+.product-list-table th:nth-child(6), /* Actions */
+.product-list-table td:nth-child(6) {
+  width: 180px;
+  text-align: center;
 }
 
 .product-list-table th,
@@ -87,12 +125,15 @@
   object-fit: cover;
   border-radius: 4px;
   border: 1px solid #e5e7eb;
+  display: block;
+  margin: 0 auto; /* Center the image */
 }
 
 .product-actions {
   display: flex;
-  gap: 10px;
+  gap: 8px;
   justify-content: center; /* Center buttons within the cell */
+  align-items: center;
 }
 
 /* --- Action Buttons (Edit/Delete) --- */
@@ -100,13 +141,15 @@
 .btn-delete {
   display: inline-flex;
   align-items: center;
-  gap: 6px; /* Space between icon and text */
-  padding: 6px 12px;
+  gap: 4px; /* Space between icon and text */
+  padding: 6px 10px;
   border-radius: 4px;
   border: 1px solid transparent;
   cursor: pointer;
   font-weight: 500;
+  font-size: 0.875rem;
   transition: all 0.2s ease-in-out;
+  white-space: nowrap; /* Prevent text wrapping */
 }
 
 .btn-edit {
@@ -146,4 +189,23 @@
   background-color: #f8d7da;
   border: 1px solid #f5c2c7;
   border-radius: 8px;
+}
+
+/* Responsive design for smaller screens */
+@media (max-width: 768px) {
+  .product-list-table th:nth-child(2),
+  .product-list-table td:nth-child(2) {
+    width: 30%;
+  }
+  
+  .product-list-table th:nth-child(3),
+  .product-list-table td:nth-child(3) {
+    width: 20%;
+  }
+  
+  .btn-edit,
+  .btn-delete {
+    padding: 4px 8px;
+    font-size: 0.75rem;
+  }
 }

@@ -70,7 +70,7 @@ import Header from './components/layout/Header';
 import Footer from './components/layout/Footer';
 import ProtectedRoute from './components/layout/ProtectedRoute.tsx';
 import AdminRoute from './components/layout/AdminRoute.tsx';
-
+import ProductDetailedPage from './pages/ProductDetailedPage';
 // Page Components
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
@@ -99,6 +99,8 @@ const App: React.FC = () => {
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/product/:productId" element={<ProductDetailPage />} />
+            <Route path="/products/:productId" element={<ProductDetailedPage />} />
+
 
             {/* --- PROTECTED CUSTOMER ROUTES --- */}
             <Route element={<ProtectedRoute />}>
