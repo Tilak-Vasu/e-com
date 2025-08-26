@@ -1,7 +1,5 @@
 // src/api/types.ts
 
-import type { ReactNode } from "react";
-
 // --- USER & AUTH ---
 
 export interface UserRegistrationData {
@@ -20,23 +18,49 @@ export interface AuthTokenResponse {
   refresh: string;
 }
 
+// This represents the decoded user object from the JWT token
+export interface User {
+  user_id: number;
+  username: string;
+  is_staff: boolean;
+}
+
+
 // --- PRODUCT ---
 
 export interface Product {
-  is_liked: boolean; // Should be a boolean
   id: number;
   name: string;
   category: string;
-  price: number;
-  image: string | null; // Image can be null
+  price: string; // CORRECTED: Django's DecimalField serializes to a string
+  description: string;
+  stock_quantity: number;
+  image: string | null;
+  is_liked: boolean;
 }
 
 export interface CartItem extends Product {
   quantity: number;
 }
 
+
+// --- REVIEWS ---
+
+export interface Review {
+  id: number;
+  author: {
+    id: number;
+    username: string;
+  };
+  text: string;
+  created_at: string;
+  updated_at: string;
+}
+
+
 // --- ORDER ---
 
+// Represents the frontend state for shipping info (using camelCase)
 export interface ShippingInfo {
   fullName: string;
   address: string;
@@ -45,25 +69,7 @@ export interface ShippingInfo {
   pincode: string;
 }
 
-// This represents an order received from the backend (e.g., in order history)
-export interface Order {
-  id: string;
-  created_at: string;
-  items: CartItem[];
-  total_amount: number; // Matches backend model
-  payment_method: 'Credit Card' | 'Pay on Delivery';
-  shipping_info: { // Matches backend JSONField structure
-    full_name: string;
-    address: string;
-    city: string;
-    state: string;
-    pin_code: string;
-  };
-}
-
-// --- V V V THIS IS THE FIX V V V ---
 // This is the specific data structure for CREATING a new order.
-// It perfectly matches what your Django OrderCreateSerializer expects.
 export interface OrderPayload {
   items: { product: number; quantity: number }[];
   shipping_info: {
@@ -74,4 +80,20 @@ export interface OrderPayload {
     pin_code: string;
   };
   payment_method: 'Credit Card' | 'Pay on Delivery';
+}
+
+// Represents an order object as RECEIVED from the backend
+export interface Order {
+  id: number;
+  created_at: string;
+  items: CartItem[];
+  total_amount: number;
+  payment_method: 'Credit Card' | 'Pay on Delivery';
+  shipping_info: {
+    full_name: string;
+    address: string;
+    city: string;
+    state: string;
+    pin_code: string;
+  };
 }

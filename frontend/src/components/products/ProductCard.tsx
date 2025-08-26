@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import type { Product } from '../../api/types';
 
 // Auth hook & API
@@ -9,7 +10,7 @@ import { toggleLikeProductAPI } from '../../api';
 import useCart from '../../hooks/useCart';
 
 // Assets & styles
-import productImage from '../../assets/images/product-placeholder.webp';
+import placeholderImage from '../../assets/images/product-placeholder.webp';
 import './ProductCard.css';
 
 interface ProductCardProps {
@@ -18,20 +19,21 @@ interface ProductCardProps {
 }
 
 const ProductCard: React.FC<ProductCardProps> = ({ product, onLikeToggle }) => {
-  const { user } = useAuth();
+  // The error will be gone now because useAuth() provides the correct value.
+  const { isAuthenticated } = useAuth();
   const { cartItems, addToCart, decreaseQuantity } = useCart();
   const itemInCart = cartItems.find(item => item.id === product.id);
 
   const isLiked = product.is_liked;
 
   const handleToggleLike = async () => {
-    if (!user) {
+    if (!isAuthenticated) {
       alert('Please log in to like products.');
       return;
     }
     try {
       await toggleLikeProductAPI(product.id);
-      onLikeToggle(); // ✅ refresh product list
+      onLikeToggle();
     } catch (error) {
       console.error("Failed to toggle like status:", error);
       alert("Something went wrong. Please try again.");
@@ -39,7 +41,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onLikeToggle }) => {
   };
 
   const handleInitialAddToCart = () => {
-    if (!user) {
+    if (!isAuthenticated) {
       alert('Please log in to add items to your cart.');
       return;
     }
@@ -48,22 +50,30 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onLikeToggle }) => {
 
   return (
     <div className="product-card">
-      <img src={productImage} alt={product.name} className="product-image" />
+      <Link to={`/products/${product.id}`}>
+        <img
+          src={product.image || placeholderImage}
+          alt={product.name}
+          className="product-image"
+        />
+      </Link>
       <div className="product-info">
         <p className="product-category">{product.category}</p>
-        <h3 className="product-name">{product.name}</h3>
-        <p className="product-price">${product.price}</p>
+        <Link to={`/products/${product.id}`} className="product-name-link">
+          <h3 className="product-name">{product.name}</h3>
+        </Link>
+        <p className="product-price">${Number(product.price).toFixed(2)}</p>
       </div>
       <div className="product-actions">
         <button
+          type='button'
           onClick={handleToggleLike}
-          disabled={!user}
+          disabled={!isAuthenticated}
           className={`like-btn ${isLiked ? 'liked' : ''}`}
-          title={!user ? 'Log in to like' : (isLiked ? 'Unlike product' : 'Like product')}
+          title={!isAuthenticated ? 'Log in to like' : (isLiked ? 'Unlike product' : 'Like product')}
         >
           {isLiked ? '❤️' : '🤍'}
         </button>
-
         {itemInCart ? (
           <div className="quantity-controller">
             <button onClick={() => decreaseQuantity(product.id)} className="quantity-btn">-</button>
@@ -73,9 +83,9 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onLikeToggle }) => {
         ) : (
           <button
             onClick={handleInitialAddToCart}
-            disabled={!user}
+            disabled={!isAuthenticated}
             className="add-to-cart-btn"
-            title={!user ? 'Log in to add to cart' : 'Add to cart'}
+            title={!isAuthenticated ? 'Log in to add to cart' : 'Add to cart'}
           >
             Add to Cart
           </button>

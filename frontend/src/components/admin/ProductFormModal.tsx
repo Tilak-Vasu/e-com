@@ -1,110 +1,227 @@
 import React, { useState, useEffect } from 'react';
-
-// Define the structure of a Product for the form
-interface ProductData {
-  name: string;
-  category: string;
-  price: string;
-  description: string;
-  stock_quantity: number;
-}
+import { type Product } from '../../api/types';
 
 interface ProductFormModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (formData: FormData) => void;
-  productToEdit: (ProductData & { id?: number }) | null;
+  productToEdit: Product | null;
   categories: string[];
 }
 
-const ProductFormModal: React.FC<ProductFormModalProps> = ({ isOpen, onClose, onSubmit, productToEdit, categories }) => {
-  const [productData, setProductData] = useState<ProductData>({
-    name: '', category: '', price: '', description: '', stock_quantity: 0
+const ProductFormModal: React.FC<ProductFormModalProps> = ({ 
+  isOpen, 
+  onClose, 
+  onSubmit, 
+  productToEdit, 
+  categories 
+}) => {
+  console.log('Modal render - isOpen:', isOpen);
+  console.log('Modal render - productToEdit:', productToEdit);
+
+  const [formData, setFormData] = useState({
+    name: '',
+    category: '',
+    price: '',
+    description: '',
+    stock_quantity: ''
   });
+  
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   useEffect(() => {
-    if (productToEdit) {
-      // Pre-fill the form with the product being edited
-      setProductData({ ...productToEdit, price: String(productToEdit.price) });
-    } else {
-      // Reset the form for a new product
-      setProductData({ name: '', category: '', price: '', description: '', stock_quantity: 0 });
+    console.log('Modal useEffect - isOpen:', isOpen, 'productToEdit:', productToEdit);
+    if (isOpen) {
+      if (productToEdit) {
+        console.log('Setting form data for edit:', productToEdit);
+        setFormData({
+          name: productToEdit.name || '',
+          category: productToEdit.category || '',
+          price: productToEdit.price ? String(productToEdit.price) : '',
+          description: productToEdit.description || '',
+          stock_quantity: productToEdit.stock_quantity ? String(productToEdit.stock_quantity) : ''
+        });
+      } else {
+        console.log('Setting form data for new product');
+        setFormData({
+          name: '',
+          category: '',
+          price: '',
+          description: '',
+          stock_quantity: ''
+        });
+      }
+      setSelectedFile(null);
     }
-    // Always reset the selected file when the modal opens
-    setSelectedFile(null);
   }, [productToEdit, isOpen]);
 
+  // Always render, but conditionally display
   if (!isOpen) {
+    console.log('Modal not rendering - isOpen is false');
     return null;
   }
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  console.log('Modal IS rendering - isOpen is true');
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setProductData(prev => ({ ...prev, [name]: value }));
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setSelectedFile(e.target.files[0]);
-    }
+    const file = e.target.files?.[0] || null;
+    setSelectedFile(file);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const formData = new FormData();
-
-    Object.entries(productData).forEach(([key, value]) => {
-      formData.append(key, String(value));
-    });
-
+    console.log('Form submitted with data:', formData);
+    
+    const submitData = new FormData();
+    submitData.append('name', formData.name.trim());
+    submitData.append('category', formData.category.trim());  
+    submitData.append('price', formData.price.trim());
+    submitData.append('description', formData.description.trim());
+    submitData.append('stock_quantity', formData.stock_quantity.trim());
+    
     if (selectedFile) {
-      formData.append('image', selectedFile);
+      submitData.append('image', selectedFile);
     }
 
-    onSubmit(formData);
+    console.log('Submitting FormData...');
+    onSubmit(submitData);
+  };
+
+  const handleOverlayClick = (e: React.MouseEvent) => {
+    // Only close if clicking the overlay, not the modal content
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={e => e.stopPropagation()}>
+    <div 
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 9999
+      }}
+      onClick={handleOverlayClick}
+    >
+      <div 
+        style={{
+          backgroundColor: 'white',
+          padding: '20px',
+          borderRadius: '8px',
+          width: '90%',
+          maxWidth: '500px',
+          maxHeight: '90vh',
+          overflow: 'auto'
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
         <h2>{productToEdit ? 'Edit Product' : 'Add New Product'}</h2>
-        <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label>Name</label>
-            <input type="text" name="name" value={productData.name} onChange={handleChange} required />
+        
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+          <div>
+            <label htmlFor="name">Product Name *</label>
+            <input
+              id="name"
+              name="name"
+              type="text"
+              value={formData.name}
+              onChange={handleInputChange}
+              required
+              style={{ width: '100%', padding: '8px', marginTop: '4px' }}
+            />
           </div>
-          <div className="form-group">
-            <label>Category</label>
-            <select name="category" value={productData.category} onChange={handleChange} required>
-              <option value="" disabled>Select a category</option>
-              {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+
+          <div>
+            <label htmlFor="category">Category *</label>
+            <select
+              id="category"
+              name="category"
+              value={formData.category}
+              onChange={handleInputChange}
+              required
+              style={{ width: '100%', padding: '8px', marginTop: '4px' }}
+            >
+              <option value="">Select a category</option>
+              {categories.map(cat => (
+                <option key={cat} value={cat}>{cat}</option>
+              ))}
             </select>
           </div>
-          <div className="form-group">
-            <label>Price</label>
-            <input type="number" name="price" value={productData.price} onChange={handleChange} required step="0.01" />
+
+          <div>
+            <label htmlFor="price">Price *</label>
+            <input
+              id="price"
+              name="price"
+              type="number"
+              step="0.01"
+              min="0"
+              value={formData.price}
+              onChange={handleInputChange}
+              required
+              style={{ width: '100%', padding: '8px', marginTop: '4px' }}
+            />
           </div>
-          <div className="form-group">
-            <label>Stock Quantity</label>
-            <input type="number" name="stock_quantity" value={productData.stock_quantity} onChange={handleChange} required />
+
+          <div>
+            <label htmlFor="stock_quantity">Stock Quantity *</label>
+            <input
+              id="stock_quantity"
+              name="stock_quantity"
+              type="number"
+              min="0"
+              value={formData.stock_quantity}
+              onChange={handleInputChange}
+              required
+              style={{ width: '100%', padding: '8px', marginTop: '4px' }}
+            />
           </div>
-          <div className="form-group">
-            <label>Image</label>
-            <input type="file" name="image" onChange={handleFileChange} accept="image/*" />
+
+          <div>
+            <label htmlFor="description">Description</label>
+            <textarea
+              id="description"
+              name="description"
+              value={formData.description}
+              onChange={handleInputChange}
+              rows={4}
+              style={{ width: '100%', padding: '8px', marginTop: '4px' }}
+            />
           </div>
-          <div className="form-group">
-            <label>Description</label>
-            <textarea name="description" value={productData.description} onChange={handleChange} rows={4} />
+
+          <div>
+            <label htmlFor="image">Product Image</label>
+            <input
+              id="image"
+              name="image"
+              type="file"
+              accept="image/*"
+              onChange={handleFileChange}
+              style={{ width: '100%', padding: '8px', marginTop: '4px' }}
+            />
           </div>
-          
-          {/* --- REVISED BUTTONS SECTION --- */}
-          <div className="modal-actions">
-            <button type="button" onClick={onClose} className="btn btn-secondary">
+
+          <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '20px' }}>
+            <button type="button" onClick={onClose} style={{ padding: '10px 20px' }}>
               Cancel
             </button>
-            <button type="submit" className="btn btn-submit">
-              {productToEdit ? 'Save Changes' : 'Create Product'}
+            <button type="submit" style={{ padding: '10px 20px', backgroundColor: '#007bff', color: 'white', border: 'none', borderRadius: '4px' }}>
+              {productToEdit ? 'Update Product' : 'Create Product'}
             </button>
           </div>
         </form>
