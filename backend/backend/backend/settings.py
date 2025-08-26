@@ -191,3 +191,16 @@ LOGGING = {
         },
     },
 }
+
+
+
+import environ
+
+env = environ.Env()
+environ.Env.read_env() # Reads the .env file
+
+# ... other settings
+
+# --- ADD THIS LINE ---
+# OpenAI API Configuration
+OPENAI_API_KEY = env('OPENAI_API_KEY')

@@ -20,9 +20,11 @@ export interface AuthTokenResponse {
 
 // This represents the decoded user object from the JWT token
 export interface User {
-  user_id: number;
+  // --- THIS IS THE FIX ---
+  id: number; // Changed from user_id for consistency
   username: string;
   is_staff: boolean;
+  is_superuser: boolean; // <-- ADDED
 }
 
 
@@ -32,7 +34,7 @@ export interface Product {
   id: number;
   name: string;
   category: string;
-  price: string; // CORRECTED: Django's DecimalField serializes to a string
+  price: string;
   description: string;
   stock_quantity: number;
   image: string | null;
@@ -60,7 +62,6 @@ export interface Review {
 
 // --- ORDER ---
 
-// Represents the frontend state for shipping info (using camelCase)
 export interface ShippingInfo {
   fullName: string;
   address: string;
@@ -69,7 +70,6 @@ export interface ShippingInfo {
   pincode: string;
 }
 
-// This is the specific data structure for CREATING a new order.
 export interface OrderPayload {
   items: { product: number; quantity: number }[];
   shipping_info: {
@@ -82,7 +82,6 @@ export interface OrderPayload {
   payment_method: 'Credit Card' | 'Pay on Delivery';
 }
 
-// Represents an order object as RECEIVED from the backend
 export interface Order {
   id: number;
   created_at: string;

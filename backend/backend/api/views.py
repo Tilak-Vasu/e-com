@@ -15,7 +15,7 @@ from rest_framework import generics, permissions, status, viewsets, serializers
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.decorators import action
-from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.parsers import MultiPartParser, FormParser,JSONParser
 from rest_framework_simplejwt.views import TokenObtainPairView
 
 # --- Local Application Imports ---
@@ -81,25 +81,36 @@ from rest_framework import status
 
 logger = logging.getLogger(__name__)
 
+
 class ProductViewSet(viewsets.ModelViewSet):
     """
-    Handles CRUD for products using separate serializers for reading and writing.
+    Handles CRUD for products, including listing and creating product reviews.
     """
     queryset = Product.objects.all().order_by('id')
-    parser_classes = (MultiPartParser, FormParser)  # Make sure both are here
+    
+    # --- FIX #1: Add JSONParser to accept JSON data for reviews ---
+    parser_classes = (MultiPartParser, FormParser, JSONParser)
 
     def get_serializer_class(self):
         """
-        Dynamically chooses the serializer.
+        Dynamically chooses the serializer based on the action.
+        ProductWriteSerializer for create/update, ProductReadSerializer for others.
         """
         if self.action in ['create', 'update', 'partial_update']:
             return ProductWriteSerializer
         return ProductReadSerializer
 
     def get_serializer_context(self):
+        """Pass the request context to the serializer."""
         return {'request': self.request}
 
     def get_permissions(self):
+        """
+        Define permissions based on the action.
+        - Allow anyone to list/retrieve products and reviews.
+        - Require authentication to post a review.
+        - Require admin privileges for all other actions (create/update/delete product).
+        """
         if self.action in ['list', 'retrieve'] or (self.action == 'reviews' and self.request.method == 'GET'):
             return [permissions.AllowAny()]
         if self.action == 'reviews' and self.request.method == 'POST':
@@ -107,22 +118,15 @@ class ProductViewSet(viewsets.ModelViewSet):
         return [permissions.IsAdminUser()]
 
     def create(self, request, *args, **kwargs):
-        """Override create to add debugging"""
+        """Override create to add debugging for product creation."""
         logger.info("=== CREATE PRODUCT DEBUG ===")
         logger.info(f"Content-Type: {request.content_type}")
-        logger.info(f"Request method: {request.method}")
         logger.info(f"Request.data: {request.data}")
         logger.info(f"Request.FILES: {request.FILES}")
-        logger.info(f"Raw POST data keys: {list(request.POST.keys())}")
         
-        # Print each field individually
-        for key in request.data:
-            logger.info(f"Field '{key}': {request.data[key]} (type: {type(request.data[key])})")
-        
-        # Call the original create method
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
-            logger.info("Serializer is valid")
+            logger.info("Serializer is valid for product creation.")
             self.perform_create(serializer)
             headers = self.get_success_headers(serializer.data)
             return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
@@ -131,24 +135,19 @@ class ProductViewSet(viewsets.ModelViewSet):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def update(self, request, *args, **kwargs):
-        """Override update to add debugging"""
+        """Override update to add debugging for product updates."""
         logger.info("=== UPDATE PRODUCT DEBUG ===")
         logger.info(f"Content-Type: {request.content_type}")
-        logger.info(f"Request method: {request.method}")
         logger.info(f"Product ID: {kwargs.get('pk')}")
         logger.info(f"Request.data: {request.data}")
         logger.info(f"Request.FILES: {request.FILES}")
-        
-        # Print each field individually
-        for key in request.data:
-            logger.info(f"Field '{key}': {request.data[key]} (type: {type(request.data[key])})")
-        
+
         partial = kwargs.pop('partial', False)
         instance = self.get_object()
         serializer = self.get_serializer(instance, data=request.data, partial=partial)
         
         if serializer.is_valid():
-            logger.info("Serializer is valid")
+            logger.info("Serializer is valid for product update.")
             self.perform_update(serializer)
             return Response(serializer.data)
         else:
@@ -157,8 +156,26 @@ class ProductViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['get', 'post'], url_path='reviews')
     def reviews(self, request, pk=None):
-        # Your existing reviews method
-        return Response({})  # Placeholder
+        """
+        Handles listing (GET) and creating (POST) reviews for a specific product.
+        """
+        product = self.get_object()
+
+        if request.method == 'GET':
+            reviews = product.reviews.all()
+            serializer = ProductReviewSerializer(reviews, many=True)
+            return Response(serializer.data)
+
+        elif request.method == 'POST':
+            serializer = ProductReviewSerializer(data=request.data, context={'request': request})
+            if serializer.is_valid():
+                # --- FIX #2: The check for existing reviews has been removed ---
+                # This allows a user to post multiple reviews for the same product.
+                serializer.save(author=request.user, product=product)
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+            
+            # If the serializer is not valid, return the errors.
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
 class ProductReviewDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = ProductReview.objects.all()

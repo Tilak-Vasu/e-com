@@ -28,9 +28,14 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
     @classmethod
     def get_token(cls, user):
         token = super().get_token(user)
-        # Add custom claims
+        
+        # --- THIS IS THE FIX ---
+        # Add all required custom claims for the frontend
+        token['id'] = user.id
         token['username'] = user.username
         token['is_staff'] = user.is_staff
+        token['is_superuser'] = user.is_superuser # <-- ADDED
+
         return token
 
 
@@ -52,12 +57,10 @@ class ProductReviewSerializer(serializers.ModelSerializer):
 
 class ProductWriteSerializer(serializers.ModelSerializer):
     """Serializer for CREATING and UPDATING products (handles file uploads)."""
-    # Make the image field not required for updates
     image = serializers.ImageField(required=False, allow_null=True)
 
     class Meta:
         model = Product
-        # These are the fields the frontend form sends.
         fields = [
             "name", "category", "price",
             "description", "stock_quantity", "image"
