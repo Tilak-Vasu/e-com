@@ -29,6 +29,22 @@ export interface User {
 
 
 // --- PRODUCT ---
+export interface CartItem {
+  // We need to keep these fields as they are what the frontend consumes
+  id: number;
+  name: string;
+  category: string;
+  price: string;
+  stock_quantity: number;
+  image: string | null;
+  is_liked: boolean;
+  
+  // The persistent cart also needs these details:
+  product_id: number; // Used by the backend, but useful for mapping
+  quantity: number;
+  price_at_addition: string; // The price when added/synced
+  stock_at_update: number;   // The stock when added/synced
+}
 
 export interface Product {
   id: number;
@@ -36,6 +52,11 @@ export interface Product {
   category: string;
   price: string;
   description: string;
+  // --- ADD ALL AI FIELDS ---
+  // meta_description?: string;
+  seo_keywords?: string;
+  ai_tags?: string;
+  // ---
   stock_quantity: number;
   image: string | null;
   is_liked: boolean;
@@ -95,4 +116,11 @@ export interface Order {
     state: string;
     pin_code: string;
   };
+}
+
+
+export interface ChatMessage {
+  id: string; // A unique ID for React's rendering keys
+  sender: 'user' | 'bot';
+  text: string;
 }

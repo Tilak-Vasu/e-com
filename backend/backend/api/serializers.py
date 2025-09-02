@@ -5,8 +5,8 @@ from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 from .models import (
-    Product, LikedProduct, Order, OrderItem,
-    ChatMessage, ChatThread, ProductReview
+    CartItem, Product, LikedProduct, Order, OrderItem,
+    ChatMessage, ChatThread, ProductReview, UserCart
 )
 
 
@@ -130,29 +130,73 @@ class OrderItemCreateSerializer(serializers.ModelSerializer):
         model = OrderItem
         fields = ("product", "quantity")
 
+
+from django.db import transaction
+
 class OrderCreateSerializer(serializers.ModelSerializer):
     items = OrderItemCreateSerializer(many=True, write_only=True)
+    
     class Meta:
         model = Order
         fields = ("id", "shipping_info", "payment_method", "items")
         read_only_fields = ("id",)
 
+    # --- THIS IS THE NEW VALIDATION LOGIC ---
+    def validate(self, data):
+        """
+        Check that the requested quantity for each item is available in stock.
+        """
+        items_data = data.get('items', [])
+        
+        for item_data in items_data:
+            product = item_data['product']
+            quantity_requested = item_data['quantity']
+            
+            if quantity_requested <= 0:
+                raise serializers.ValidationError({
+                    "items": f"Quantity for '{product.name}' must be a positive number."
+                })
+                
+            if quantity_requested > product.stock_quantity:
+                raise serializers.ValidationError({
+                    "items": f"Not enough stock for '{product.name}'. Only {product.stock_quantity} units available, but you requested {quantity_requested}."
+                })
+
+        return data
+    
+    # --- THIS create METHOD IS UPDATED TO BE ATOMIC AND DEDUCT STOCK ---
     def create(self, validated_data):
         items_data = validated_data.pop('items')
         user = self.context['request'].user
-        total_amount = 0
-        order_items_to_create = []
+        
+        # All database operations are now wrapped in a transaction.
+        # If any step fails (e.g., stock runs out), the entire operation is rolled back.
+        with transaction.atomic():
+            order = Order.objects.create(user=user, total_amount=0, **validated_data)
+            total_amount = 0
+            
+            for item_data in items_data:
+                product = item_data['product']
+                quantity = item_data['quantity']
+                
+                # Re-check stock to prevent race conditions
+                product.refresh_from_db()
+                if quantity > product.stock_quantity:
+                    raise serializers.ValidationError(f"Someone just bought the last '{product.name}'. Please adjust your cart.")
 
-        for item_data in items_data:
-            product, quantity = item_data['product'], item_data['quantity']
-            price = product.price
-            total_amount += price * quantity
-            order_items_to_create.append(OrderItem(product=product, quantity=quantity, price=price))
+                # Create the OrderItem
+                OrderItem.objects.create(order=order, product=product, quantity=quantity, price=product.price)
 
-        order = Order.objects.create(user=user, total_amount=total_amount, **validated_data)
-        for item in order_items_to_create:
-            item.order = order
-        OrderItem.objects.bulk_create(order_items_to_create)
+                # --- Crucially, decrease the product's stock quantity ---
+                product.stock_quantity -= quantity
+                product.save(update_fields=['stock_quantity'])
+
+                total_amount += product.price * quantity
+
+            # Update the order's final total amount
+            order.total_amount = total_amount
+            order.save(update_fields=['total_amount'])
+
         return order
 
 
@@ -180,3 +224,24 @@ class ChatThreadSerializer(serializers.ModelSerializer):
 
     def get_participants_usernames(self, obj):
         return [user.username for user in obj.participants.all()]
+    
+
+class CartItemSerializer(serializers.ModelSerializer):
+    product_id = serializers.IntegerField(write_only=True)
+    product_name = serializers.CharField(source='product.name', read_only=True)
+    
+    class Meta:
+        model = CartItem
+        fields = [
+            'id', 'product_id', 'product_name', 'quantity', 
+            'price_at_addition', 'stock_at_update'
+        ]
+        read_only_fields = ['id', 'product_name', 'price_at_addition', 'stock_at_update']
+
+class UserCartSerializer(serializers.ModelSerializer):
+    items = CartItemSerializer(many=True)
+
+    class Meta:
+        model = UserCart
+        fields = ['items', 'updated_at']
+        read_only_fields = ['updated_at']

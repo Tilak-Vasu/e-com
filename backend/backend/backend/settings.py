@@ -175,7 +175,6 @@ MEDIA_ROOT = BASE_DIR / 'media'
 STRIPE_PUBLISHABLE_KEY = env('STRIPE_PUBLISHABLE_KEY')
 STRIPE_SECRET_KEY = env('STRIPE_SECRET_KEY')
 
-OPENAI_API_KEY = env('OPENAI_API_KEY')
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -203,4 +202,4 @@ environ.Env.read_env() # Reads the .env file
 
 # --- ADD THIS LINE ---
 # OpenAI API Configuration
-OPENAI_API_KEY = env('OPENAI_API_KEY')
+GEMINI_API_KEY = env('GEMINI_API_KEY')

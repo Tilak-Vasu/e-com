@@ -16,7 +16,9 @@ import type {
 // ====================================================================
 // --- AUTHENTICATION API FUNCTIONS ---
 // ====================================================================
-
+export const fetchBestsellersAPI = (): Promise<AxiosResponse<Product[]>> => {
+  return api.get('/products/bestsellers/');
+};
 export const registerUserAPI = (userData: UserRegistrationData): Promise<AxiosResponse> => {
   return api.post('/register/', userData);
 };
@@ -28,6 +30,23 @@ export const loginUserAPI = (credentials: UserCredentials): Promise<AxiosRespons
 // ====================================================================
 // --- PRODUCT API FUNCTIONS ---
 // ====================================================================
+export const generateProductContentAPI = (name: string, category: string): Promise<AxiosResponse<{
+  description?: string;
+  seo_keywords?: string;
+  data?: {
+    description: string;
+    seo_keywords: string;
+  };
+  fallback_used?: boolean;
+  message?: string;
+  error_details?: string;
+}>> => {
+  return api.post('/products/generate-content/', { name, category });
+};
+
+export const searchProductsByTagsAPI = (query: string): Promise<AxiosResponse<Product[]>> => {
+  return api.get(`/products/tag-search/`, { params: { query } });
+};
 
 export const fetchProductsAPI = (): Promise<AxiosResponse<Product[]>> => {
   return api.get('/products/');
@@ -100,4 +119,13 @@ export const createOrderAPI = (orderData: OrderPayload): Promise<AxiosResponse<O
 export const createPaymentIntentAPI = async (data: { total_amount: number }) => {
   const response = await api.post('/create-payment-intent/', data);
   return response.data; // Expects a response like { clientSecret: "pi_..." }
+};
+
+export const fetchRecommendationsAPI = (productId: string | number): Promise<AxiosResponse<Product[]>> => {
+  return api.get(`/products/${productId}/recommendations/`);
+};
+
+
+export const askChatbotAPI = (query: string): Promise<AxiosResponse<{ response: string }>> => {
+  return api.post('/chatbot/', { query });
 };

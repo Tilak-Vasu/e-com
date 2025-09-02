@@ -1,5 +1,7 @@
+// AdminDashboardPage.tsx
+
 import React, { useState, useEffect, useMemo } from 'react';
-import useApi from '../hooks/useApi';
+import useApi from '../hooks/useApi'; // Assuming you have this custom hook
 import { Bar, Doughnut } from 'react-chartjs-2';
 import {
     Chart as ChartJS,
@@ -16,7 +18,39 @@ import './AdminDashboardPage.css';
 // Register Chart.js components
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement);
 
+// --- HSL-Based Dynamic Color Generation ---
+const generateDistinctColors = (count: number): string[] => {
+    const colors: string[] = [];
+    const goldenRatio = 0.618033988749895;
+    let hue = Math.random();
+    
+    for (let i = 0; i < count; i++) {
+        hue += goldenRatio;
+        hue %= 1;
+        
+        const hueDegrees = Math.floor(hue * 360);
+        const saturation = 65 + (i % 3) * 10;
+        const lightness = 50 + (i % 2) * 10;
+        
+        colors.push(`hsl(${hueDegrees}, ${saturation}%, ${lightness}%)`);
+    }
+    return colors;
+};
+
+// --- Hash-based consistent colors (for consistent category colors) ---
+const stringToColor = (str: string): string => {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+        hash = str.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const hue = Math.abs(hash) % 360;
+    const saturation = 60 + (Math.abs(hash) % 4) * 8;
+    const lightness = 45 + (Math.abs(hash) % 3) * 8;
+    return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+};
+
 // --- Reusable Widget Components ---
+
 const KPICard: React.FC<{ title: string; value: string | number; icon: string }> = ({ title, value, icon }) => (
     <div className="dashboard-widget kpi-card">
         <div className="kpi-icon-wrapper">{icon}</div>
@@ -30,220 +64,265 @@ const KPICard: React.FC<{ title: string; value: string | number; icon: string }>
 const TableWidget: React.FC<{ title: string; items: any[] }> = ({ title, items }) => (
     <div className="dashboard-widget table-widget recent-transactions-widget">
         <h4>{title}</h4>
-        <table className="transaction-table">
-            <tbody>
-                {items.map((item, index) => (
-                    <tr key={index}>
-                        <td className="order-cell">
-                            Order #{item.id}
-                            <span className="user-email">by {item.user}</span>
-                        </td>
-                        <td className="payment-cell">
-                            <span className="item-meta">{item.payment_method}</span>
-                        </td>
-                        <td className="amount-cell">
-                            ${item.total_amount}
-                        </td>
+        <div className="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Order Details</th>
+                        <th className="cell-center">Payment</th>
+                        <th style={{ textAlign: 'right' }}>Amount</th>
                     </tr>
-                ))}
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                    {items.map((item, index) => (
+                        <tr key={index}>
+                            <td className="cell-user">
+                                Order #{item.id}
+                            <span className="subtext">by {item.user || 'Anonymous'}</span>                            
+                            </td>
+                            <td className="cell-payment">
+                                <span className="status-pill status-neutral">{item.payment_method}</span>
+                            </td>
+                            <td className="cell-amount">${item.total_amount}</td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+        </div>
     </div>
 );
 
+const InventoryInsightsWidget: React.FC<{ title: string; items: any[] }> = ({ title, items }) => {
+    
+    const getStatusClass = (status: string) => {
+        if (status === 'Critical') return 'status-critical';
+        if (status === 'Warning') return 'status-warning';
+        if (status === 'Stale') return 'status-stale'; // Handles unsold products
+        return 'status-ok';
+    };
+
+    return (
+        <div className="dashboard-widget table-widget inventory-insights-widget">
+            <h4>{title}</h4>
+            <div className="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Product</th>
+                            <th className="cell-center">Last Month Sales</th>
+                            <th className="cell-center">Current Stock</th>
+                            <th className="cell-center">Suggested Order</th>
+                            <th>AI Recommendation</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {items.map((item) => (
+                            <tr key={item.product_id}>
+                                <td className="cell-product">{item.product_name}</td>
+                                <td className="cell-center">{item.previous_month_sales}</td>
+                                <td className="cell-center">{item.current_stock}</td>
+                                <td className="cell-center cell-suggestion">
+                                    {item.suggested_order_quantity > 0 ? item.suggested_order_quantity : '-'}
+                                </td>
+                                <td>
+                                    <span className={`status-pill ${getStatusClass(item.ai_status)}`}>
+                                        {item.ai_recommendation}
+                                    </span>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    );
+};
+
 // --- Main Dashboard Page Component ---
+
 const AdminDashboardPage: React.FC = () => {
     const [data, setData] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [timePeriod, setTimePeriod] = useState<'monthly' | 'daily'>('monthly');
     const [dataType, setDataType] = useState<'sales' | 'orders'>('sales');
+    const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
+    const [colorMethod, setColorMethod] = useState<'dynamic' | 'hash'>('hash');
     const api = useApi();
 
     useEffect(() => {
         const fetchDashboardData = async () => {
+            setLoading(true);
             try {
-                const response = await api.get('/admin/dashboard/');
+                // Fetch data for the selected year
+                const response = await api.get(`/admin/dashboard/?year=${selectedYear}`);
                 setData(response.data);
             } catch (err) {
                 console.error("Failed to fetch dashboard data:", err);
+                setData(null); // Clear data on error
             } finally {
                 setLoading(false);
             }
         };
         fetchDashboardData();
-    }, [api]);
+    }, [api, selectedYear]);
 
-    // Chart Options with Legend Spacing
-    const mainChartOptions = useMemo(() => {
-        const isSalesChart =
-            (timePeriod === 'monthly') || (timePeriod === 'daily' && dataType === 'sales');
-
-        const options: any = {
-            maintainAspectRatio: false,
-            responsive: true,
-            plugins: {
-                legend: {
-                    labels: {
-                        font: { size: 14, weight: '600' },
-                        color: '#333',
-                        padding: 20, // Add padding between legend items
-                        usePointStyle: true // Makes legend use point style instead of rectangles
-                    },
-                    // Add margin/padding around the entire legend
-                    padding: {
-                        top: 10,
-                        bottom: 30 // This creates space between legend and chart
+    const mainChartOptions = useMemo(() => ({
+        maintainAspectRatio: false,
+        responsive: true,
+        plugins: {
+            legend: { position: 'top' as const },
+            tooltip: {
+                callbacks: {
+                    label: (context: any) => {
+                        const label = context.dataset.label || '';
+                        const value = context.parsed.y;
+                        return label.includes('Sales') ? `${label}: $${value.toLocaleString()}` : `${label}: ${value}`;
                     }
                 }
+            }
+        },
+        scales: {
+            y: {
+                type: 'linear' as const,
+                display: true,
+                position: 'left' as const,
+                title: { display: true, text: 'Sales ($)' },
+                ticks: { callback: (value: any) => '$' + value.toLocaleString() }
             },
-            layout: {
-                padding: {
-                    top: 20, // Additional top padding if needed
-                    bottom: 10
-                }
+            y1: {
+                type: 'linear' as const,
+                display: true,
+                position: 'right' as const,
+                title: { display: true, text: 'Orders' },
+                grid: { drawOnChartArea: false }
             },
-            scales: {}
+        },
+    }), []);
+    
+    const mainChartData = useMemo(() => {
+        if (!data?.main_chart?.[timePeriod]) return { labels: [], datasets: [] };
+        const source = data.main_chart[timePeriod];
+        
+        const salesDataset = {
+            label: timePeriod === 'monthly' ? 'Sales ($)' : 'Daily Sales ($)',
+            data: source.sales_data,
+            backgroundColor: '#3b82f6',
+            borderColor: '#2563eb',
+            borderWidth: 1,
+            yAxisID: 'y'
+        };
+
+        const ordersDataset = {
+            label: timePeriod === 'monthly' ? 'Orders' : 'Daily Orders',
+            data: source.orders_data,
+            backgroundColor: '#a855f7',
+            borderColor: '#9333ea',
+            borderWidth: 1,
+            yAxisID: 'y1'
         };
 
         if (timePeriod === 'monthly') {
-            options.scales = {
-                y: {
-                    type: 'linear',
-                    display: true,
-                    position: 'left',
-                    grid: { drawOnChartArea: true, color: '#e9ecef' },
-                    ticks: {
-                        color: '#444',
-                        font: { size: 13, weight: '600' },
-                        callback: (value: number) =>
-                            isSalesChart ? '$' + value.toLocaleString() : value
-                    }
-                },
-                y1: {
-                    type: 'linear',
-                    display: true,
-                    position: 'right',
-                    grid: { drawOnChartArea: false },
-                    ticks: {
-                        color: '#444',
-                        font: { size: 13, weight: '600' }
-                    }
-                }
-            };
-        } else {
-            // Daily chart
-            options.scales = {
-                y: {
-                    min: 0,
-                    max: dataType === 'orders' ? 10 : undefined, // limit to 10 for orders
-                    ticks: {
-                        stepSize: 1, // step size 1
-                        color: '#444',
-                        font: { size: 13, weight: '600' },
-                        callback: (value: number) =>
-                            dataType === 'sales'
-                                ? '$' + value.toLocaleString()
-                                : value
-                    },
-                    grid: { color: '#e9ecef' }
-                },
-                x: {
-                    ticks: {
-                        color: '#444',
-                        font: { size: 13, weight: '600' }
-                    },
-                    grid: { color: '#e9ecef' }
-                }
-            };
+            return { labels: source.labels, datasets: [salesDataset, ordersDataset] };
         }
-
-        return options;
-    }, [timePeriod, dataType]);
-
-    // Chart Data
-    const mainChartData = useMemo(() => {
-        if (!data) return { labels: [], datasets: [] };
-        const sourceData = data.main_chart[timePeriod];
-
-        if (timePeriod === 'monthly') {
-            // Ensure months are in Jan → Dec order
-            const monthOrder = [
-                'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-                'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
-            ];
-
-            const orderedLabels = monthOrder.filter(m => sourceData.labels.includes(m));
-            const orderedSales = orderedLabels.map(m => sourceData.sales_data[sourceData.labels.indexOf(m)]);
-            const orderedOrders = orderedLabels.map(m => sourceData.orders_data[sourceData.labels.indexOf(m)]);
-
-            return {
-                labels: orderedLabels,
-                datasets: [
-                    {
-                        label: 'Sales ($)',
-                        data: orderedSales,
-                        backgroundColor: '#3b82f6', // brighter blue
-                        borderRadius: 6,
-                        yAxisID: 'y',
-                    },
-                    {
-                        label: 'Orders',
-                        data: orderedOrders,
-                        backgroundColor: '#a855f7', // brighter purple
-                        borderRadius: 6,
-                        yAxisID: 'y1',
-                    }
-                ],
-            };
-        } else {
-            return {
-                labels: sourceData.labels,
-                datasets: [{
-                    label: dataType === 'sales' ? 'Daily Sales ($)' : 'Daily Orders',
-                    data: dataType === 'sales' ? sourceData.sales_data : sourceData.orders_data,
-                    backgroundColor: dataType === 'sales' ? '#3b82f6' : '#a855f7',
-                    borderRadius: 6
-                }],
-            };
-        }
+        
+        // For daily view, show one dataset at a time based on dataType state
+        return {
+            labels: source.labels,
+            datasets: [dataType === 'sales' ? salesDataset : ordersDataset],
+        };
     }, [data, timePeriod, dataType]);
 
     const categoryChartData = useMemo(() => {
         if (!data?.category_sales_chart?.labels?.length) return { labels: [], datasets: [] };
+        
+        const labels = data.category_sales_chart.labels;
+        const categoryColors = colorMethod === 'dynamic'
+            ? generateDistinctColors(labels.length)
+            : labels.map((label: string) => stringToColor(label));
+
         return {
-            labels: data.category_sales_chart.labels,
+            labels,
             datasets: [{
                 data: data.category_sales_chart.data,
-                backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40'],
+                backgroundColor: categoryColors,
+                borderWidth: 2,
+                borderColor: '#ffffff'
             }]
         };
-    }, [data]);
+    }, [data, colorMethod]);
+
+    const categoryChartOptions = useMemo(() => ({
+        maintainAspectRatio: false,
+        responsive: true,
+        plugins: {
+            legend: { position: 'right' as const, labels: { padding: 15, usePointStyle: true, font: { size: 12 } } },
+            tooltip: {
+                callbacks: {
+                    label: (context: any) => {
+                        const value = context.parsed;
+                        const total = context.dataset.data.reduce((a: number, b: number) => a + b, 0);
+                        const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                        return `${context.label}: $${value.toLocaleString()} (${percentage}%)`;
+                    }
+                }
+            }
+        }
+    }), []);
+
+    const YearSelector = () => (
+        <div className="year-selector">
+            <select
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(Number(e.target.value))}
+                aria-label="Select year"
+                disabled={!data?.chart_meta?.available_years}
+            >
+                {data?.chart_meta?.available_years?.map((year: number) => (
+                    <option key={year} value={year}>{year}</option>
+                ))}
+            </select>
+        </div>
+    );
+
+    const ColorMethodToggle = () => (
+        <div className="color-method-toggle">
+            <button
+                onClick={() => setColorMethod(prev => prev === 'dynamic' ? 'hash' : 'dynamic')}
+                title="Toggle color generation method"
+            >
+                🎨 {colorMethod === 'dynamic' ? 'Dynamic' : 'Consistent'} Colors
+            </button>
+        </div>
+    );
 
     if (loading) return <div className="dashboard-loading">Loading Dashboard...</div>;
-    if (!data) return <div className="dashboard-error">Could not load dashboard data. Please try again.</div>;
+    if (!data) return <div className="dashboard-error">Could not load dashboard data. Please try again later.</div>;
 
     return (
         <div className="admin-dashboard-grid">
-            <h1 className="dashboard-header">Dashboard</h1>
+            <h1 className="dashboard-header">Admin Dashboard</h1>
 
             <KPICard title="Total Income" value={`$${data.kpis.total_income}`} icon="💳" />
             <KPICard title="Total Orders" value={data.kpis.total_orders} icon="🛒" />
             <KPICard title="Total Users" value={data.kpis.total_users} icon="👥" />
 
-            <div className="dashboard-widget chart-widget">
+            <div className="dashboard-widget chart-widget main-chart">
                 <div className="widget-header">
                     <h4>Performance Overview</h4>
-                    <div className="toggle-controls">
-                        <div className="chart-toggle">
-                            <button onClick={() => setTimePeriod('daily')} className={timePeriod === 'daily' ? 'active' : ''}>Daily</button>
-                            <button onClick={() => setTimePeriod('monthly')} className={timePeriod === 'monthly' ? 'active' : ''}>Monthly</button>
-                        </div>
-                        {timePeriod === 'daily' && (
+                    <div className="all-controls-wrapper">
+                        <YearSelector />
+                        <div className="toggle-controls">
                             <div className="chart-toggle">
-                                <button onClick={() => setDataType('sales')} className={dataType === 'sales' ? 'active' : ''}>Sales</button>
-                                <button onClick={() => setDataType('orders')} className={dataType === 'orders' ? 'active' : ''}>Orders</button>
+                                <button onClick={() => setTimePeriod('daily')} className={timePeriod === 'daily' ? 'active' : ''}>Daily</button>
+                                <button onClick={() => setTimePeriod('monthly')} className={timePeriod === 'monthly' ? 'active' : ''}>Monthly</button>
                             </div>
-                        )}
+                            {timePeriod === 'daily' && (
+                                <div className="chart-toggle">
+                                    <button onClick={() => setDataType('sales')} className={dataType === 'sales' ? 'active' : ''}>Sales</button>
+                                    <button onClick={() => setDataType('orders')} className={dataType === 'orders' ? 'active' : ''}>Orders</button>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
                 <div className="chart-container">
@@ -252,16 +331,24 @@ const AdminDashboardPage: React.FC = () => {
             </div>
 
             <div className="dashboard-widget donut-chart-widget">
-                <h4>Sales by Category</h4>
+                <div className="widget-header">
+                    <h4>Sales by Category</h4>
+                    <ColorMethodToggle />
+                </div>
                 <div className="chart-container-donut">
-                    <Doughnut
-                        data={categoryChartData}
-                        options={{ maintainAspectRatio: false, responsive: true, plugins: { legend: { position: 'right' } } }}
-                    />
+                    <Doughnut data={categoryChartData} options={categoryChartOptions} />
                 </div>
             </div>
 
-            <TableWidget title="Recent Transactions" items={data.recent_transactions} />
+            <div className="recent-transactions-widget">
+                <TableWidget title="Recent Transactions" items={data.recent_transactions} />
+            </div>
+
+            {data.inventory_insights && data.inventory_insights.length > 0 && (
+                <div className="inventory-insights-widget">
+                    <InventoryInsightsWidget title="AI Inventory Insights" items={data.inventory_insights} />
+                </div>
+            )}
         </div>
     );
 };

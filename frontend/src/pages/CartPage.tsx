@@ -8,7 +8,8 @@ import Button from '../components/common/Button';
 import './CartPage.css';
 
 const CartPage: React.FC = () => {
-  const { cartItems, cartTotal, clearCart } = useCart();
+  // --- Get the new isCartInvalid flag from our hook ---
+  const { cartItems, cartTotal, clearCart, isCartInvalid } = useCart();
 
   if (cartItems.length === 0) {
     return (
@@ -25,8 +26,17 @@ const CartPage: React.FC = () => {
   return (
     <div className="cart-page">
       <h1>Your Shopping Cart</h1>
+
+      {/* --- NEW: Show a prominent warning if the cart is invalid --- */}
+      {isCartInvalid && (
+        <div className="cart-error-banner">
+          One or more items in your cart exceeds the available stock. Please adjust quantities before proceeding.
+        </div>
+      )}
+
       <div className="cart-layout">
         <div className="cart-items-list">
+          {/* We will need to update CartItem.tsx to show a per-item warning */}
           {cartItems.map(item => <CartItem key={item.id} item={item} />)}
         </div>
         <aside className="cart-summary-card">
@@ -44,12 +54,21 @@ const CartPage: React.FC = () => {
             <span>Total</span>
             <span>${cartTotal.toFixed(2)}</span>
           </div>
-          <Link to="/checkout">
-            <Button disabled={cartItems.length === 0}>
+          <Link to="/checkout" style={{ textDecoration: 'none' }}>
+            {/* --- THE FIX: Disable the button if the cart is invalid --- */}
+            <Button 
+              disabled={cartItems.length === 0 || isCartInvalid}
+              title={isCartInvalid ? "Please resolve stock issues before checkout" : "Proceed to Checkout"}
+            >
               Proceed to Checkout
             </Button>
           </Link>
-          <Button onClick={clearCart} variant="danger" disabled={cartItems.length === 0}>
+          <Button 
+            onClick={clearCart} 
+            variant="danger" 
+            disabled={cartItems.length === 0}
+            style={{ marginTop: '1rem' }} // Add some space
+          >
             Clear Cart
           </Button>
         </aside>

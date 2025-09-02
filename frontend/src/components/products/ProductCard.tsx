@@ -1,61 +1,40 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import type { Product } from '../../api/types';
-
-// Auth hook & API
 import { useAuth } from '../../hooks/useAuth';
-import { toggleLikeProductAPI } from '../../api';
-
-// Cart hook
-import useCart from '../../hooks/useCart';
-
-// Assets & styles
+import useCart from '../../hooks/useCart'; // This now points to our new Zustand-powered hook
 import placeholderImage from '../../assets/images/product-placeholder.webp';
 import './ProductCard.css';
 
 interface ProductCardProps {
   product: Product;
-  onLikeToggle: () => void;
+  onLikeToggle: (productId: number, currentLikeStatus: boolean) => void;
+  likedProductIds?: Set<number>;
 }
 
-const ProductCard: React.FC<ProductCardProps> = ({ product, onLikeToggle }) => {
-  // The error will be gone now because useAuth() provides the correct value.
+const ProductCard: React.FC<ProductCardProps> = ({
+  product,
+  onLikeToggle,
+  likedProductIds = new Set(),
+}) => {
   const { isAuthenticated } = useAuth();
+  // --- FIX: Get all required functions from our new persistent cart hook ---
   const { cartItems, addToCart, decreaseQuantity } = useCart();
   const itemInCart = cartItems.find(item => item.id === product.id);
+  const isLiked = likedProductIds.has(product.id);
 
-  const isLiked = product.is_liked;
-
-  const handleToggleLike = async () => {
+  const handleToggleLike = () => {
     if (!isAuthenticated) {
       alert('Please log in to like products.');
       return;
     }
-    try {
-      await toggleLikeProductAPI(product.id);
-      onLikeToggle();
-    } catch (error) {
-      console.error("Failed to toggle like status:", error);
-      alert("Something went wrong. Please try again.");
-    }
-  };
-
-  const handleInitialAddToCart = () => {
-    if (!isAuthenticated) {
-      alert('Please log in to add items to your cart.');
-      return;
-    }
-    addToCart(product);
+    onLikeToggle(product.id, isLiked);
   };
 
   return (
     <div className="product-card">
       <Link to={`/products/${product.id}`}>
-        <img
-          src={product.image || placeholderImage}
-          alt={product.name}
-          className="product-image"
-        />
+        <img src={product.image || placeholderImage} alt={product.name} className="product-image" />
       </Link>
       <div className="product-info">
         <p className="product-category">{product.category}</p>
@@ -74,20 +53,35 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onLikeToggle }) => {
         >
           {isLiked ? '❤️' : '🤍'}
         </button>
+
+        {/* --- FIX: Full implementation of the quantity controller --- */}
         {itemInCart ? (
           <div className="quantity-controller">
             <button onClick={() => decreaseQuantity(product.id)} className="quantity-btn">-</button>
             <span className="quantity-display">{itemInCart.quantity}</span>
-            <button onClick={() => addToCart(product)} className="quantity-btn">+</button>
+            <button 
+              onClick={() => addToCart(product)} 
+              className="quantity-btn"
+              disabled={itemInCart.quantity >= product.stock_quantity}
+              title={itemInCart.quantity >= product.stock_quantity ? "No more stock" : "Increase quantity"}
+            >
+              +
+            </button>
           </div>
         ) : (
           <button
-            onClick={handleInitialAddToCart}
-            disabled={!isAuthenticated}
+            onClick={() => {
+              if (!isAuthenticated) {
+                alert('Please log in to add items to your cart.');
+                return;
+              }
+              addToCart(product);
+            }}
+            disabled={!isAuthenticated || product.stock_quantity < 1}
             className="add-to-cart-btn"
-            title={!isAuthenticated ? 'Log in to add to cart' : 'Add to cart'}
+            title={!isAuthenticated ? 'Log in' : (product.stock_quantity < 1 ? 'Out of Stock' : 'Add to cart')}
           >
-            Add to Cart
+            {product.stock_quantity < 1 ? 'Out of Stock' : 'Add to Cart'}
           </button>
         )}
       </div>

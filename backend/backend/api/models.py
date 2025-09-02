@@ -10,7 +10,10 @@ class Product(models.Model):
     description = models.TextField(blank=True, null=True)
     stock_quantity = models.IntegerField(default=0) # <-- ADD THIS FIELD
     image = models.ImageField(upload_to='products/', null=True, blank=True)
-
+    # --- ADD ALL NEW AI FIELDS ---
+    # meta_description = models.CharField(max_length=255, blank=True, null=True, help_text="AI-generated SEO meta description")
+    seo_keywords = models.CharField(max_length=255, blank=True, null=True, help_text="AI-generated comma-separated SEO keywords")
+    ai_tags = models.TextField(blank=True, null=True, help_text="AI-generated comma-separated tags for smart searching")
     def __str__(self):
         return self.name
 
@@ -83,3 +86,49 @@ class ProductReview(models.Model):
 
     def __str__(self):
         return f'Review for {self.product.name} by {self.author.username}'
+    
+
+class UserCart(models.Model):
+    """
+    Represents the persistent shopping cart for an authenticated user.
+    """
+    user = models.OneToOneField(
+        User,
+        on_delete=models.CASCADE,
+        related_name='cart',
+        verbose_name='User'
+    )
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Cart for {self.user.username}"
+
+class CartItem(models.Model):
+    """
+    Represents an item within a persistent UserCart.
+    """
+    cart = models.ForeignKey(
+        UserCart,
+        on_delete=models.CASCADE,
+        related_name='items',
+        verbose_name='Cart'
+    )
+    product = models.ForeignKey(
+        Product,
+        on_delete=models.CASCADE,
+        verbose_name='Product'
+    )
+    # We must store quantity, price, and stock here to save the state
+    quantity = models.IntegerField(default=1)
+    
+    # Store the product price and stock quantity at the time the item was added/updated
+    # This is critical for cart persistence and stock checking
+    price_at_addition = models.DecimalField(max_digits=10, decimal_places=2)
+    stock_at_update = models.IntegerField()
+
+    class Meta:
+        # Ensures a user doesn't have multiple entries for the same product in their cart
+        unique_together = ('cart', 'product')
+
+    def __str__(self):
+        return f"{self.quantity} x {self.product.name} in {self.cart.user.username}'s cart"

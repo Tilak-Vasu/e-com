@@ -9,6 +9,7 @@ from .views import (
     LikedProductListView, OrderListCreateView, AdminDashboardView,
     ChatThreadView, CreatePaymentIntentView
 )
+from .views import CartView ,ChatbotView# Import the new view
 
 router = DefaultRouter()
 router.register(r'products', ProductViewSet, basename='product')
@@ -31,6 +32,11 @@ urlpatterns = [
     path('chat_threads/', ChatThreadView.as_view(), name='chat-thread-list'),
     # --- ADMIN ---
     path('admin/dashboard/', AdminDashboardView.as_view(), name='admin-dashboard'),
+
+    path('cart/', CartView.as_view(), name='user-cart'), # <-- ADD THIS LINE
+    path('chatbot/', ChatbotView.as_view(), name='chatbot'), # <-- ADD THIS LINE
+
+
     # --- ROUTER URLS ---
     path('', include(router.urls)),
 ]

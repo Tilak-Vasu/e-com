@@ -5,10 +5,17 @@ import './ProductList.css';
 
 interface ProductListProps {
   products: Product[];
-  onLikeToggle: () => void; // ✅ callback from parent to refresh products
+  onLikeToggle: (productId: number, currentLikeStatus: boolean) => void;
+  // --- FIX 1: Make the prop optional with a `?` ---
+  likedProductIds?: Set<number>;
 }
 
-const ProductList: React.FC<ProductListProps> = ({ products, onLikeToggle }) => {
+const ProductList: React.FC<ProductListProps> = ({
+  products,
+  onLikeToggle,
+  // --- FIX 2: Provide a default empty Set if the prop isn't passed ---
+  likedProductIds = new Set(),
+}) => {
   if (products.length === 0) {
     return <p className="no-products-message">No products found matching your criteria.</p>;
   }
@@ -19,7 +26,9 @@ const ProductList: React.FC<ProductListProps> = ({ products, onLikeToggle }) => 
         <ProductCard
           key={product.id}
           product={product}
-          onLikeToggle={onLikeToggle} // ✅ forward to ProductCard
+          onLikeToggle={onLikeToggle}
+          // This will now always pass down a valid Set, never undefined
+          likedProductIds={likedProductIds}
         />
       ))}
     </div>

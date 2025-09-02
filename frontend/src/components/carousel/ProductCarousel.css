@@ -1,0 +1,72 @@
+/* src/components/products/carousel/ProductCarousel.css */
+
+.carousel-wrapper {
+  position: relative;
+  width: 100%;
+  padding: 0 40px; /* Space for arrows */
+  box-sizing: border-box;
+}
+
+.product-slide {
+  min-width: 280px; /* Ensure min width for cards */
+  max-width: 320px;
+}
+
+/* Arrow Styles */
+.arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 38px;
+  height: 38px;
+  background-color: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  color: #374151;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  transition: opacity 0.3s ease, background-color 0.2s ease, border-color 0.2s ease;
+  z-index: 10;
+}
+
+.arrow:hover:not(:disabled) {
+  background-color: #f3f4f6;
+  border-color: #d1d5db;
+}
+
+/* Disabled state */
+.arrow:disabled {
+  opacity: 0.2;
+  cursor: not-allowed;
+  background-color: #f9fafb;
+  border-color: #e5e7eb;
+}
+
+/* OPTIONAL: hide disabled arrows completely 
+.arrow:disabled {
+  opacity: 0;
+  pointer-events: none;
+}
+*/
+
+.arrow--left {
+  left: 0;
+}
+
+.arrow--right {
+  right: 0;
+}
+
+/* On mobile, hide arrows completely */
+@media (max-width: 640px) {
+  .arrow {
+    display: none;
+  }
+  .carousel-wrapper {
+    padding: 0;
+  }
+}
