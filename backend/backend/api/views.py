@@ -214,7 +214,6 @@ class MyTokenObtainPairView(TokenObtainPairView):
 # --- PRODUCT, CATEGORY, REVIEW, & LIKE VIEWS ---
 # ==========================================================
 # Add this to your views.py - Updated ProductViewSet with debugging
-import logging
 
 from rest_framework import status
 from functools import reduce
@@ -1251,3 +1250,4 @@ class ChatbotView(APIView):
             logger.warning("No staff user found to act as the AI sender. AI response was not saved.")
         
         return ai_response_text
+    
