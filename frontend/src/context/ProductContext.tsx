@@ -4,17 +4,18 @@ import React, {
   useEffect,
   useCallback,
   useContext,
+  useRef,
   type ReactNode
 } from 'react';
 import type { Product } from '../api/types';
-import useApi from '../hooks/useApi'; // ✅ Authenticated axios instance
+import useApi from '../hooks/useApi';
 
 // --- Context Type ---
 interface ProductContextType {
   products: Product[];
   loading: boolean;
   error: string | null;
-  fetchProducts: () => Promise<void>; // ✅ Can be called from anywhere
+  fetchProducts: () => Promise<void>;
 }
 
 // --- Create Context ---
@@ -26,34 +27,56 @@ export const ProductProvider: React.FC<{ children: ReactNode }> = ({ children })
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const api = useApi();
+  
+  // Add ref to prevent multiple simultaneous fetches
+  const isFetchingRef = useRef(false);
 
-  // ✅ Wrapped fetching logic
   const fetchProducts = useCallback(async () => {
+    // Prevent multiple simultaneous fetches
+    if (isFetchingRef.current) {
+      return;
+    }
+
+    isFetchingRef.current = true;
     setLoading(true);
     setError(null);
+    
     try {
-      // --- FIX: Implement Cache-Busting ---
-      // We create a unique URL on every call by adding the current time as a
-      // query parameter. This forces the browser to bypass its cache and
-      // always request fresh data from your server.
-
-      // BEFORE:
-      // const response = await api.get<Product[]>('/products/');
-
-      // AFTER:
+      // Cache-busting URL
       const urlWithCacheBuster = `/products/?_=${new Date().getTime()}`;
       const response = await api.get<Product[]>(urlWithCacheBuster);
-
-      setProducts(response.data);
-    } catch (err) {
+      
+      // Validate response data
+      if (Array.isArray(response.data)) {
+        setProducts(response.data);
+      } else {
+        throw new Error('Invalid response format: expected array of products');
+      }
+      
+    } catch (err: any) {
       console.error("Failed to fetch products:", err);
-      setError("Could not load products. Please try again later.");
+      
+      // More specific error messages
+      if (err.code === 'ERR_NETWORK') {
+        setError("Network error. Please check your connection and try again.");
+      } else if (err.response?.status === 401) {
+        setError("Authentication required. Please log in again.");
+      } else if (err.response?.status >= 500) {
+        setError("Server error. Please try again later.");
+      } else {
+        setError(err.message || "Could not load products. Please try again later.");
+      }
+      
+      // Keep existing products on error (don't clear them)
+      // setProducts([]); // Remove this line to preserve existing data
+      
     } finally {
       setLoading(false);
+      isFetchingRef.current = false;
     }
   }, [api]);
 
-  // ✅ Initial fetch
+  // Initial fetch
   useEffect(() => {
     fetchProducts();
   }, [fetchProducts]);

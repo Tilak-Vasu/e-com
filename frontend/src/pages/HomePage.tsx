@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, type ChangeEvent } from 'react';
+import React, { useState, useMemo, useEffect, useRef, type ChangeEvent } from 'react';
 
 // Hooks and API
 import useProducts from '../hooks/useProducts';
@@ -23,7 +23,10 @@ const HomePage: React.FC = () => {
   const [displayedProducts, setDisplayedProducts] = useState<Product[]>([]);
   const { likedProductIds, setInitialLikedProducts, likeProduct, unlikeProduct } = useLikedProductsStore();
 
-  // ... (all other state declarations are the same)
+  // Add ref to prevent multiple initializations
+  const hasInitialized = useRef(false);
+
+  // State declarations
   const [isSearching, setIsSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -35,7 +38,7 @@ const HomePage: React.FC = () => {
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
-  // ... (mobile-specific useEffects are the same)
+  // Mobile-specific useEffects
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth <= 992);
     checkMobile();
@@ -58,45 +61,47 @@ const HomePage: React.FC = () => {
     return () => { document.body.style.overflow = 'unset'; };
   }, [isMobile, isMobileFilterOpen]);
 
-  
-  // --- DATA LOADING AND SEARCH LOGIC ---
+  // HOOK 1: Handles initializing the global liked products store ONCE.
   useEffect(() => {
-    const performSearchOrLoadAll = async () => {
-      setSearchError(null);
-      if (debouncedSearchTerm.trim().length > 2) {
-        setIsSearching(true);
-        try {
-          const response = await searchProductsByTagsAPI(debouncedSearchTerm);
+    // If the main product list has loaded AND the liked products store is still empty,
+    // then populate it with the initial data, and we haven't initialized yet
+    if (allProducts.length > 0 && likedProductIds.size === 0 && !hasInitialized.current) {
+      hasInitialized.current = true;
+      setInitialLikedProducts(allProducts);
+    }
+  }, [allProducts, likedProductIds.size, setInitialLikedProducts]);
+
+  // HOOK 2: Handles all logic for searching and displaying products.
+  useEffect(() => {
+    // Don't run this until the initial product load is complete.
+    if (initialLoading) {
+      return;
+    }
+
+    // If the user is searching, perform the AI tag search.
+    if (debouncedSearchTerm.trim().length > 2) {
+      setIsSearching(true);
+      searchProductsByTagsAPI(debouncedSearchTerm)
+        .then(response => {
           setDisplayedProducts(response.data);
-        } catch (err) {
+        })
+        .catch(err => {
           console.error("AI Tag Search failed:", err);
           setSearchError("Search failed. Showing all available products.");
           setDisplayedProducts(allProducts);
-        } finally {
+        })
+        .finally(() => {
           setIsSearching(false);
-        }
-      } else {
-        setDisplayedProducts(allProducts);
-      }
-      setCurrentPage(1);
-    };
-
-    if (!initialLoading) {
-      performSearchOrLoadAll();
-
-      // --- THE FIX ---
-      // Only initialize the global store if it's currently empty.
-      // This prevents the homepage from overwriting the correct state with
-      // stale data when you navigate back to it.
-      if (allProducts.length > 0 && likedProductIds.size === 0) {
-        setInitialLikedProducts(allProducts);
-      }
+        });
+    } else {
+      // Otherwise, just display the main list of all products.
+      setDisplayedProducts(allProducts);
     }
-    // Add likedProductIds to the dependency array because our logic now depends on it
-  }, [debouncedSearchTerm, allProducts, initialLoading, setInitialLikedProducts, likedProductIds]);
+    // Reset to page 1 whenever the displayed products change.
+    setCurrentPage(1);
+  }, [debouncedSearchTerm, allProducts, initialLoading]);
 
-
-  // === LIKE HANDLER (NO CHANGES NEEDED HERE) ===
+  // Like handler
   const handleProductLike = async (productId: number, currentLikeStatus: boolean) => {
     setDisplayedProducts(prevProducts =>
       prevProducts.map(p =>
@@ -126,7 +131,6 @@ const HomePage: React.FC = () => {
     }
   };
 
-  // ... (The rest of the component remains exactly the same)
   const categories = useMemo(() => {
     const allCategories = allProducts.map(p => p.category);
     return ['all', ...Array.from(new Set(allCategories))];
