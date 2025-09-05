@@ -2,7 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import type { Product } from '../../api/types';
 import { useAuth } from '../../hooks/useAuth';
-import useCart from '../../hooks/useCart'; // This now points to our new Zustand-powered hook
+import useCart from '../../hooks/useCart';
 import placeholderImage from '../../assets/images/product-placeholder.webp';
 import './ProductCard.css';
 
@@ -18,7 +18,6 @@ const ProductCard: React.FC<ProductCardProps> = ({
   likedProductIds = new Set(),
 }) => {
   const { isAuthenticated } = useAuth();
-  // --- FIX: Get all required functions from our new persistent cart hook ---
   const { cartItems, addToCart, decreaseQuantity } = useCart();
   const itemInCart = cartItems.find(item => item.id === product.id);
   const isLiked = likedProductIds.has(product.id);
@@ -33,8 +32,15 @@ const ProductCard: React.FC<ProductCardProps> = ({
 
   return (
     <div className="product-card">
-      <Link to={`/products/${product.id}`}>
-        <img src={product.image || placeholderImage} alt={product.name} className="product-image" />
+      <Link to={`/products/${product.id}`} className="product-image-link">
+        {/* This container is key. It will be styled to have a consistent shape. */}
+        <div className="product-image-container">
+          <img 
+            src={product.image || placeholderImage} 
+            alt={product.name} 
+            className="product-image" 
+          />
+        </div>
       </Link>
       <div className="product-info">
         <p className="product-category">{product.category}</p>
@@ -54,7 +60,6 @@ const ProductCard: React.FC<ProductCardProps> = ({
           {isLiked ? '❤️' : '🤍'}
         </button>
 
-        {/* --- FIX: Full implementation of the quantity controller --- */}
         {itemInCart ? (
           <div className="quantity-controller">
             <button onClick={() => decreaseQuantity(product.id)} className="quantity-btn">-</button>

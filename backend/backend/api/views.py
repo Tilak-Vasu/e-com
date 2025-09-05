@@ -214,6 +214,8 @@ class MyTokenObtainPairView(TokenObtainPairView):
 # --- PRODUCT, CATEGORY, REVIEW, & LIKE VIEWS ---
 # ==========================================================
 # Add this to your views.py - Updated ProductViewSet with debugging
+from PIL import Image
+import io
 
 from rest_framework import status
 from functools import reduce
@@ -254,6 +256,45 @@ class ProductViewSet(viewsets.ModelViewSet):
         # with a secondary sort by ID to ensure consistent ordering for items with equal sales.
         return queryset.order_by('-total_sold', '-id')
 
+    @action(detail=False, methods=['post'], url_path='verify-image', permission_classes=[permissions.IsAdminUser])
+    def verify_image(self, request):
+        product_name = request.data.get('name')
+        # --- NEW: Get the category from the request ---
+        category = request.data.get('category')
+        image_file = request.FILES.get('image_file')
+
+        if not product_name or not category or not image_file:
+            return Response({"error": "Product name, category, and an image file are required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            image = Image.open(image_file)
+            
+            # --- THE FIX: The prompt now includes the category for better context ---
+            prompt_parts = [
+                f"You are an e-commerce content validator. Analyze this image. "
+                f"Does the image primarily feature a '{product_name}' that belongs in the '{category}' category? "
+                f"Respond with a single word: YES or NO.",
+                image,
+            ]
+
+            model = genai.GenerativeModel('models/gemini-1.5-flash')
+            response = model.generate_content(prompt_parts)
+            
+            decision = response.text.strip().upper()
+
+            if "YES" in decision:
+                return Response({"match": True, "decision": "YES"}, status=status.HTTP_200_OK)
+            elif "NO" in decision:
+                return Response({"match": False, "decision": "NO"}, status=status.HTTP_200_OK)
+            else:
+                logger.warning(f"Unexpected image verification response: {response.text}")
+                return Response({"match": True, "decision": "UNCLEAR_DEFAULT_YES"}, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            logger.error(f"Image verification failed: {e}", exc_info=True)
+            return Response({"match": True, "decision": "API_ERROR_DEFAULT_YES"}, status=status.HTTP_200_OK)
+        
+        
     @action(detail=False, methods=['get'], url_path='bestsellers')
     def bestsellers(self, request):
         """
@@ -1104,64 +1145,59 @@ from .models import ChatThread, ChatMessage # <-- Import the chat models
 
 
 
+
+from .models import PolicyDocument
+from .serializers import PolicyDocumentSerializer
+
+class PolicyDocumentViewSet(viewsets.ModelViewSet):
+    """
+    A ViewSet for admins to upload, list, update, and delete policy documents.
+    """
+    queryset = PolicyDocument.objects.all().order_by('-updated_at')
+    serializer_class = PolicyDocumentSerializer
+    permission_classes = [permissions.IsAdminUser] # Only admins can manage documents
+
+
+from .vector_db import search_orders, search_documents
+import asyncio
+
 from rest_framework.views import APIView
 from asgiref.sync import sync_to_async, async_to_sync
 
 class ChatbotView(APIView):
     """
-    A stateful, RAG-powered chatbot that remembers conversation history.
+    A stateful, RAG-powered chatbot that can answer questions about
+    both customer orders AND uploaded policy documents.
     """
     permission_classes = [permissions.IsAuthenticated]
 
     # --- Asynchronous helper methods for clean database access ---
-
     @sync_to_async
     def get_or_create_chatbot_thread(self, user):
-        """
-        Safely finds or creates the primary chat thread for a specific user.
-        This is more robust than using get_or_create on a ManyToManyField.
-        """
-        # First, try to find an existing thread where this user is a participant.
-        # .first() safely returns the first object or None, without crashing.
         thread = ChatThread.objects.filter(participants=user).first()
-        
         if thread:
-            # If a thread was found, simply return it.
             return thread
         else:
-            # If no thread was found, create a new one.
-            new_thread = ChatThread.objects.create(
-                name=f'Primary Chat - {user.username}'
-            )
-            # Add the customer
+            new_thread = ChatThread.objects.create(name=f'Primary Chat - {user.username}')
             new_thread.participants.add(user)
-            # Find and add all active staff members
             staff_users = User.objects.filter(is_staff=True, is_active=True)
             if staff_users.exists():
                 new_thread.participants.add(*staff_users)
-            
             return new_thread
 
     @sync_to_async
     def get_recent_history(self, thread):
-        """Retrieves the last turn of the conversation (1 user msg, 1 AI msg) for short-term memory."""
-        messages = ChatMessage.objects.filter(thread=thread).order_by('-timestamp')[:2]
-        # Reverse the messages to get them in chronological order
-        history = "\n".join([
-            f"{'Human' if not msg.sender.is_staff else 'AI'}: {msg.text}"
-            for msg in reversed(messages)
-        ])
-        return history
+        messages = ChatMessage.objects.filter(thread=thread).order_by('-timestamp')[:8]
+        return "\n".join([f"{'Human' if not msg.sender.is_staff else 'AI'}: {msg.text}" for msg in reversed(messages)])
 
     @sync_to_async
     def save_chat_message(self, thread, user, text):
-        """Saves a single message to the database."""
         return ChatMessage.objects.create(thread=thread, sender=user, text=text)
 
     @sync_to_async
     def get_ai_user(self):
-        """Finds a staff user to be the sender of the AI's messages."""
         return User.objects.filter(is_staff=True).first()
+
 
     # --- The main API endpoint logic ---
     def post(self, request, *args, **kwargs):
@@ -1172,82 +1208,84 @@ class ChatbotView(APIView):
         user = request.user
         
         try:
-            # Use async_to_sync to run our async logic within the sync DRF view
+            # Use async_to_sync to safely run our async logic
             response_text = async_to_sync(self._process_chat_async)(user, user_query)
             return Response({"response": response_text})
         except Exception as e:
             logger.error(f"Chatbot error for user {user.id}: {e}", exc_info=True)
-            return Response(
-                {"error": "I'm sorry, the AI service is currently unavailable. Please try again in a moment."}, 
-                status=status.HTTP_503_SERVICE_UNAVAILABLE
-            )
+            return Response({"error": "AI service is unavailable."}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+
 
     async def _process_chat_async(self, user, user_query):
         """
-        The core async processing logic for handling a chat message.
+        The core async logic, now with parallel RAG searches for both orders and documents.
         """
         thread = await self.get_or_create_chatbot_thread(user)
-        
-        # 1. Get recent conversation history for short-term memory
         last_history = await self.get_recent_history(thread)
-        
-        # 2. Save the user's new message to the database immediately
         await self.save_chat_message(thread, user, user_query)
 
-        # 3. Always run the RAG search to get the most relevant order context
-        logger.info(f"User '{user.username}' sent a message. Running RAG search for context...")
+        # --- PARALLEL RAG SEARCH ---
+        logger.info(f"Running parallel RAG search for user '{user.username}'...")
         
-        relevant_orders = await sync_to_async(search_orders)(
-            query=user_query, 
-            user_id=user.id, 
-            n_results=5 # Fetch a few orders to handle general questions
+        # Create async-safe versions of our synchronous search functions
+        search_orders_async = sync_to_async(search_orders, thread_sensitive=False)
+        search_docs_async = sync_to_async(search_documents, thread_sensitive=False)
+        
+        # Run both searches at the same time and wait for them to complete
+        relevant_orders, relevant_docs = await asyncio.gather(
+            search_orders_async(query=user_query, user_id=user.id, n_results=3),
+            search_docs_async(query=user_query, n_results=3)
         )
         
-        # 4. Build the context string for the AI prompt
-        context_string = "No relevant orders were found in the user's history for this query."
-        if relevant_orders:
-            order_summaries = []
-            for order_data in relevant_orders:
-                summary = (
-                    f"Order #{order_data.get('order_id')} "
-                    f"(Total: ${order_data.get('total_amount', 0):.2f}, "
-                    f"Date: {order_data.get('date', '').split('T')[0]}) "
-                    f"containing products: {order_data.get('products', 'N/A')}."
-                )
-                order_summaries.append(summary)
-            
-            context_string = "\n".join(order_summaries)
+        # --- BUILD COMBINED CONTEXT ---
         
-        # 5. Build the final prompt with history and context
+        # Build the order context string
+        order_context = "No relevant personal orders were found for this query."
+        if relevant_orders:
+            order_summaries = [
+                f"- Order #{data.get('order_id')} ({data.get('date', '').split('T')[0]}) containing: {data.get('products', 'N/A')}."
+                for data in relevant_orders
+            ]
+            order_context = "Relevant User Order History:\n" + "\n".join(order_summaries)
+
+        # Build the policy document context string
+        document_context = "No relevant company policies were found for this query."
+        if relevant_docs:
+            document_context = "Relevant Company Policy Information:\n---\n" + "\n---\n".join(relevant_docs)
+
+        # --- FINAL PROMPT & GENERATION ---
+        
         final_prompt = f"""
         You are a helpful and friendly e-commerce assistant for 'E-Shop'.
+        You have access to two sources of information: the user's personal order history and the company's official policy documents.
+        Use the most relevant information to answer the user's question.
 
         Here is the recent conversation history:
         <history>
         {last_history}
         </history>
         
-        Here is a summary of the user's most relevant orders from our database. Use this information to answer the question.
-        <context>
-        {context_string}
-        </context>
+        Here is the user's relevant order history:
+        <order_context>
+        {order_context}
+        </order_context>
         
-        Please answer the user's NEWEST question based on the history and the context provided. Be concise and conversational.
+        Here is relevant information from our company policy documents:
+        <document_context>
+        {document_context}
+        </document_context>
+        
+        Please answer the user's NEWEST question based on the most relevant context and the conversation history. Be concise and conversational.
         
         NEWEST QUESTION: "{user_query}"
         """
 
-        # 6. Call Gemini for the final answer
-        model = genai.GenerativeModel('gemini-2.5-flash')
+        model = genai.GenerativeModel('models/gemini-1.5-flash')
         main_response = await model.generate_content_async(final_prompt)
         ai_response_text = main_response.text.strip()
         
-        # 7. Save the AI's response to the database
         ai_user = await self.get_ai_user()
         if ai_user:
             await self.save_chat_message(thread, ai_user, ai_response_text)
-        else:
-            logger.warning("No staff user found to act as the AI sender. AI response was not saved.")
         
         return ai_response_text
-    

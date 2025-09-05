@@ -10,7 +10,8 @@ import type {
   UserCredentials,
   UserRegistrationData,
   OrderPayload,
-  Review // Import the Review type for the new functions
+  Review, // Import the Review type for the new functions
+  PolicyDocument
 } from './types';
 
 // ====================================================================
@@ -31,6 +32,7 @@ export const loginUserAPI = (credentials: UserCredentials): Promise<AxiosRespons
 // --- PRODUCT API FUNCTIONS ---
 // ====================================================================
 export const generateProductContentAPI = (name: string, category: string): Promise<AxiosResponse<{
+  error: string | undefined;
   description?: string;
   seo_keywords?: string;
   data?: {
@@ -128,4 +130,55 @@ export const fetchRecommendationsAPI = (productId: string | number): Promise<Axi
 
 export const askChatbotAPI = (query: string): Promise<AxiosResponse<{ response: string }>> => {
   return api.post('/chatbot/', { query });
+};
+
+
+
+// ====================================================================
+// --- NEW: DOCUMENT ASSISTANT API FUNCTIONS ---
+// ====================================================================
+
+/**
+ * Fetches all uploaded policy documents.
+ * Corresponds to: GET /api/documents/
+ */
+export const fetchDocumentsAPI = (): Promise<AxiosResponse<PolicyDocument[]>> => {
+  return api.get('/documents/');
+};
+
+/**
+ * Uploads a new document file with a title.
+ * This requires a FormData object.
+ * Corresponds to: POST /api/documents/
+ */
+export const uploadDocumentAPI = (formData: FormData): Promise<AxiosResponse<PolicyDocument>> => {
+  return api.post('/documents/', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+};
+
+/**
+ * Deletes a document by its ID.
+ * Corresponds to: DELETE /api/documents/<doc_id>/
+ */
+export const deleteDocumentAPI = (documentId: number): Promise<AxiosResponse> => {
+  return api.delete(`/documents/${documentId}/`);
+};
+
+/**
+ * (Placeholder for future feature) Asks a question to the document-specific chatbot.
+ */
+export const askDocumentChatbotAPI = (query: string): Promise<AxiosResponse<{ response: string }>> => {
+  // We will build the backend for this endpoint next
+  return api.post('/documents/ask/', { query });
+};
+
+export const verifyImageAPI = (formData: FormData): Promise<AxiosResponse<{ match: boolean; decision: string }>> => {
+  return api.post('/products/verify-image/', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
 };

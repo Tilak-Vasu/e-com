@@ -54,13 +54,13 @@ const AdminProductManagementPage: React.FC = () => {
     setEditingProduct(null);
   };
 
-  const handleFormSubmit = async (formData: FormData) => {
+  const handleFormSubmit = async (productData: Omit<Product, 'id' | 'is_liked' | 'reviews' | 'ai_tags'>) => {
     setFormError(null);
     try {
       if (editingProduct) {
-        await api.put(`/products/${editingProduct.id}/`, formData);
+        await api.put(`/products/${editingProduct.id}/`, productData);
       } else {
-        await api.post('/products/', formData);
+        await api.post('/products/', productData);
       }
       await fetchProducts();
       handleCloseModal();
@@ -77,7 +77,6 @@ const AdminProductManagementPage: React.FC = () => {
       }
     }
   };
-
   const handleDeleteProduct = async (productId: number) => {
     if (window.confirm('Are you sure you want to delete this product?')) {
       try {

@@ -124,3 +124,12 @@ export interface ChatMessage {
   sender: 'user' | 'bot';
   text: string;
 }
+
+
+export interface PolicyDocument {
+  id: number;
+  title: string;
+  file: string; // The URL to the uploaded file
+  uploaded_at: string;
+  updated_at: string;
+}

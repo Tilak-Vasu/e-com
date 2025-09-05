@@ -56,28 +56,40 @@ class ProductReviewSerializer(serializers.ModelSerializer):
         read_only_fields = ['author']
 
 class ProductWriteSerializer(serializers.ModelSerializer):
-    """Serializer for CREATING and UPDATING products (handles file uploads)."""
-    image = serializers.ImageField(required=False, allow_null=True)
-
+    """Serializer for CREATING and UPDATING products (handles both URL and file uploads)."""
+    image_url = serializers.URLField(required=False, allow_null=True, allow_blank=True)
+    image_file = serializers.ImageField(required=False, allow_null=True)
+    
     class Meta:
         model = Product
         fields = [
-            "name", "category", "price",
-            "description", "stock_quantity", "image"
+            "name", "category", "price", "description", "stock_quantity", 
+            "image_url", "image_file", "seo_keywords"
         ]
+    
+    def validate(self, data):
+        """Ensure at least one image method is used, but not both"""
+        image_url = data.get('image_url')
+        image_file = data.get('image_file')
+        
+        # Both provided - clear the URL to prioritize file upload
+        if image_url and image_file:
+            data['image_url'] = None
+            
+        return data
 
 class ProductReadSerializer(serializers.ModelSerializer):
     """Serializer for READING product data (displaying products)."""
     is_liked = serializers.SerializerMethodField()
-    image = serializers.SerializerMethodField()
+    image = serializers.SerializerMethodField()  # Virtual field that returns the appropriate image
     description = serializers.SerializerMethodField()
     reviews = ProductReviewSerializer(many=True, read_only=True)
 
     class Meta:
         model = Product
         fields = [
-            "id", "name", "category", "price",
-            "description", "stock_quantity", "is_liked", "image", "reviews"
+            "id", "name", "category", "price", "description", "stock_quantity",
+            "seo_keywords", "is_liked", "image", "reviews"
         ]
 
     def get_is_liked(self, obj):
@@ -88,17 +100,17 @@ class ProductReadSerializer(serializers.ModelSerializer):
         return False
 
     def get_image(self, obj):
+        """Returns the appropriate image URL - prioritizes uploaded file over URL"""
         request = self.context.get('request')
-        if obj.image and hasattr(obj.image, 'url'):
-            return request.build_absolute_uri(obj.image.url)
-        return None
+        if obj.image_file:
+            return request.build_absolute_uri(obj.image_file.url) if request else obj.image_file.url
+        return obj.image_url
 
     def get_description(self, obj):
         if obj.description and obj.description.strip():
             return obj.description
         return "Here is the product"
-
-
+    
 class ProductDetailSerializer(serializers.ModelSerializer):
     """A minimal serializer for product details inside an order."""
     class Meta:
@@ -245,3 +257,13 @@ class UserCartSerializer(serializers.ModelSerializer):
         model = UserCart
         fields = ['items', 'updated_at']
         read_only_fields = ['updated_at']
+
+
+
+from .models import PolicyDocument
+
+class PolicyDocumentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PolicyDocument
+        fields = ['id', 'title', 'file', 'uploaded_at', 'updated_at']
+        read_only_fields = ['id', 'uploaded_at', 'updated_at']

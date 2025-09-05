@@ -1,5 +1,5 @@
 /* ====================================================================
-   ADMIN DASHBOARD STYLES
+   ADMIN DASHBOARD STYLES - Updated for 4 KPIs in one row
    ==================================================================== */
 
 /* --- CSS Custom Properties --- */
@@ -68,7 +68,7 @@ body {
 /* --- Main Dashboard Grid Layout --- */
 .admin-dashboard-grid {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
+  grid-template-columns: repeat(8, 1fr); /* Changed from 6 to 8 columns for better flexibility */
   gap: var(--spacing-xl);
   padding: var(--spacing-xl);
   max-width: 1400px;
@@ -106,7 +106,8 @@ body {
 
 /* --- Widget Placement --- */
 .kpi-card { 
-  grid-column: span 2; 
+  grid-column: span 2; /* Each KPI takes 2 columns out of 8 = 4 KPIs per row */
+  max-width: none; /* Remove any width constraints */
 }
 
 .main-chart { 
@@ -114,11 +115,11 @@ body {
 }
 
 .donut-chart-widget { 
-  grid-column: span 2; 
+  grid-column: span 3; /* Adjusted for 8-column grid */
 }
 
 .recent-transactions-widget { 
-  grid-column: span 4; 
+  grid-column: span 5; /* Adjusted for 8-column grid */
 }
 
 .inventory-insights-widget { 
@@ -169,6 +170,39 @@ body {
   margin: 0;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+}
+
+/* --- Navigation KPI Card Styles --- */
+.nav-kpi-link {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+
+.nav-kpi-link:hover {
+  text-decoration: none;
+}
+
+.nav-kpi-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
+
+.nav-kpi-card:hover {
+  background-color: var(--bg-hover);
+  cursor: pointer;
+}
+
+.nav-kpi-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 var(--spacing-xs) 0;
+}
+
+.kpi-description {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin: 0;
 }
 
 /* --- Widget Headers and Controls --- */
@@ -547,18 +581,38 @@ body {
 
 /* --- Responsive Design --- */
 
-/* Large tablets and small desktops */
+/* Large desktops - keep 4 KPIs in one row */
+@media (min-width: 1200px) {
+  .admin-dashboard-grid {
+    max-width: 1600px;
+  }
+}
+
+/* Standard desktop */
+@media (max-width: 1199px) {
+  .kpi-card { 
+    grid-column: span 2; /* Still 4 per row on 8-column grid */
+  }
+}
+
+/* Large tablets and small desktops - 2 KPIs per row */
 @media (max-width: 1024px) {
   .admin-dashboard-grid { 
-    grid-template-columns: repeat(2, 1fr); 
+    grid-template-columns: repeat(4, 1fr); 
   }
   
-  .kpi-card, 
+  .kpi-card { 
+    grid-column: span 2; /* 2 KPIs per row on 4-column grid */
+  }
+  
   .donut-chart-widget { 
-    grid-column: span 1; 
+    grid-column: span 2; 
   }
   
-  .recent-transactions-widget, 
+  .recent-transactions-widget { 
+    grid-column: span 2; 
+  }
+  
   .inventory-insights-widget { 
     grid-column: 1 / -1; 
   }
@@ -572,7 +626,7 @@ body {
   }
 }
 
-/* Tablets */
+/* Tablets - 1 KPI per row */
 @media (max-width: 768px) {
   .admin-dashboard-grid { 
     grid-template-columns: 1fr; 
@@ -633,14 +687,11 @@ body {
     font-size: 1.5rem;
     padding-bottom: var(--spacing-sm);
   }
-
-  .kpi-card {
-    flex-direction: column;
-    text-align: center;
-    gap: var(--spacing-md);
-    min-height: auto;
-    padding: var(--spacing-md);
-  }
+.kpi-card {
+  grid-column: span 2;
+  width: 100%;         /* Force equal width */
+  justify-content: space-between; /* Keep content aligned */
+}
 
   .kpi-icon-wrapper { 
     width: 50px; 
@@ -694,4 +745,21 @@ body {
   .all-controls-wrapper {
     gap: var(--spacing-sm);
   }
+}
+
+
+.kpi-card .kpi-value {
+  white-space: nowrap;  /* Prevent breaking into two lines */
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+
+
+.kpi-card {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start; /* or space-between if you want them spread */
+  gap: 16px; /* spacing between icon and text */
+  padding: 20px; /* spacing inside card */
 }

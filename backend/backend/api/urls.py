@@ -10,9 +10,10 @@ from .views import (
     ChatThreadView, CreatePaymentIntentView
 )
 from .views import CartView ,ChatbotView# Import the new view
-
+from .views import PolicyDocumentViewSet
 router = DefaultRouter()
 router.register(r'products', ProductViewSet, basename='product')
+router.register(r'documents', PolicyDocumentViewSet, basename='document')
 
 urlpatterns = [
     # --- AUTHENTICATION ---

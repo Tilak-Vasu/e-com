@@ -8,14 +8,25 @@ class Product(models.Model):
     category = models.CharField(max_length=100)
     price = models.DecimalField(max_digits=10, decimal_places=2)
     description = models.TextField(blank=True, null=True)
-    stock_quantity = models.IntegerField(default=0) # <-- ADD THIS FIELD
-    image = models.ImageField(upload_to='products/', null=True, blank=True)
-    # --- ADD ALL NEW AI FIELDS ---
-    # meta_description = models.CharField(max_length=255, blank=True, null=True, help_text="AI-generated SEO meta description")
+    stock_quantity = models.IntegerField(default=0)
+    
+    # Support both URL and file upload for images
+    image_url = models.URLField(max_length=500, blank=True, null=True, help_text="URL to product image")
+    image_file = models.ImageField(upload_to='products/', blank=True, null=True, help_text="Upload product image file")
+    
+    # AI fields
     seo_keywords = models.CharField(max_length=255, blank=True, null=True, help_text="AI-generated comma-separated SEO keywords")
     ai_tags = models.TextField(blank=True, null=True, help_text="AI-generated comma-separated tags for smart searching")
+    
     def __str__(self):
         return self.name
+    
+    @property
+    def image(self):
+        """Returns the appropriate image URL - prioritizes uploaded file over URL"""
+        if self.image_file:
+            return self.image_file.url
+        return self.image_url
 
 class LikedProduct(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='liked_products')
@@ -132,3 +143,19 @@ class CartItem(models.Model):
 
     def __str__(self):
         return f"{self.quantity} x {self.product.name} in {self.cart.user.username}'s cart"
+
+
+
+
+class PolicyDocument(models.Model):
+    """
+    Represents an uploaded policy document (e.g., Returns, Shipping)
+    that can be used as a knowledge base for the RAG chatbot.
+    """
+    title = models.CharField(max_length=200)
+    file = models.FileField(upload_to='policy_documents/')
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.title

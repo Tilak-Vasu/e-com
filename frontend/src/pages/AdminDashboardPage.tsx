@@ -14,6 +14,7 @@ import {
     ArcElement
 } from 'chart.js';
 import './AdminDashboardPage.css';
+import { Link } from 'react-router-dom'; // --- IMPORT for navigation ---
 
 // Register Chart.js components
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement);
@@ -51,15 +52,27 @@ const stringToColor = (str: string): string => {
 
 // --- Reusable Widget Components ---
 
-const KPICard: React.FC<{ title: string; value: string | number; icon: string }> = ({ title, value, icon }) => (
-    <div className="dashboard-widget kpi-card">
-        <div className="kpi-icon-wrapper">{icon}</div>
-        <div className="kpi-content">
-            <div className="kpi-value">{value}</div>
-            <div className="kpi-title">{title}</div>
+const KPICard: React.FC<{ title: string; value: string | number; icon: string; to?: string }> = ({ title, value, icon, to }) => {
+    const cardContent = (
+        <div className="dashboard-widget kpi-card">
+            <div className="kpi-icon-wrapper">{icon}</div>
+            <div className="kpi-content">
+                <div className="kpi-value">{value}</div>
+                <div className="kpi-title">{title}</div>
+            </div>
         </div>
-    </div>
-);
+    );
+
+    if (to) {
+        return (
+            <Link to={to} className="nav-kpi-link">
+                {cardContent}
+            </Link>
+        );
+    }
+
+    return cardContent;
+};
 
 const TableWidget: React.FC<{ title: string; items: any[] }> = ({ title, items }) => (
     <div className="dashboard-widget table-widget recent-transactions-widget">
@@ -305,6 +318,12 @@ const AdminDashboardPage: React.FC = () => {
             <KPICard title="Total Income" value={`$${data.kpis.total_income}`} icon="💳" />
             <KPICard title="Total Orders" value={data.kpis.total_orders} icon="🛒" />
             <KPICard title="Total Users" value={data.kpis.total_users} icon="👥" />
+            <KPICard 
+                title="Document Assistant" 
+                value="Manage Docs" 
+                icon="📄" 
+                to="/admin/documents" 
+            />
 
             <div className="dashboard-widget chart-widget main-chart">
                 <div className="widget-header">

@@ -2,8 +2,10 @@
 
 import chromadb
 from sentence_transformers import SentenceTransformer
-from .models import Order
+from .models import Order,PolicyDocument
 import logging
+from pypdf import PdfReader
+import io
 
 logger = logging.getLogger(__name__)
 
@@ -11,6 +13,7 @@ logger = logging.getLogger(__name__)
 CHROMA_PATH = "chroma_db"
 COLLECTION_NAME = "orders"
 EMBEDDING_MODEL_NAME = 'all-MiniLM-L6-v2' 
+DOCUMENTS_COLLECTION_NAME = "documents"
 
 # --- Initialize ChromaDB Client and Sentence Transformer Model ---
 try:
@@ -20,11 +23,17 @@ try:
         name=COLLECTION_NAME,
         metadata={"hnsw:space": "cosine"}
     )
+    documents_collection = client.get_or_create_collection(
+        name=DOCUMENTS_COLLECTION_NAME,
+        metadata={"hnsw:space": "cosine"}
+    )
     print("ChromaDB and Sentence Transformer model initialized successfully.")
 except Exception as e:
     logger.error(f"Failed to initialize ChromaDB or Sentence Transformer: {e}")
     collection = None
     embedding_model = None
+    documents_collection = None
+
 
 def index_all_orders():
     """
@@ -124,3 +133,83 @@ def index_single_order(order: Order):
         logger.info(f"Successfully upserted order ID: {order.id}")
     except Exception as e:
         logger.error(f"Failed to upsert order ID {order.id}: {e}")
+
+
+
+def extract_text_from_file(file_field):
+    """Extracts text from an uploaded file (PDF or TXT)."""
+    file_bytes = file_field.read()
+    file_stream = io.BytesIO(file_bytes)
+    
+    if file_field.name.lower().endswith('.pdf'):
+        reader = PdfReader(file_stream)
+        return "".join(page.extract_text() for page in reader.pages)
+    elif file_field.name.lower().endswith('.txt'):
+        return file_stream.read().decode('utf-8')
+    else:
+        logger.warning(f"Unsupported file type for text extraction: {file_field.name}")
+        return ""
+
+
+def index_document(document: PolicyDocument):
+    """
+    Reads a PolicyDocument, splits its text into chunks, creates embeddings,
+    and adds them to the 'documents' collection in ChromaDB.
+    """
+    if not documents_collection or not embedding_model:
+        raise Exception("ChromaDB document collection not available.")
+
+    text = extract_text_from_file(document.file)
+    if not text:
+        logger.warning(f"No text extracted from document ID {document.id}. Skipping indexing.")
+        return
+
+    # A simple chunking strategy (more advanced methods exist)
+    chunks = [text[i:i+500] for i in range(0, len(text), 400)] # 500 chars with 100 char overlap
+    
+    if not chunks:
+        return
+
+    # Create unique IDs for each chunk
+    chunk_ids = [f"doc{document.id}_chunk{i}" for i, _ in enumerate(chunks)]
+    
+    # Create metadata for each chunk
+    metadatas = [{
+        "document_id": document.id,
+        "document_title": document.title,
+        "chunk_index": i
+    } for i, _ in enumerate(chunks)]
+
+    embeddings = embedding_model.encode(chunks).tolist()
+
+    documents_collection.upsert(
+        ids=chunk_ids,
+        embeddings=embeddings,
+        documents=chunks,
+        metadatas=metadatas
+    )
+    logger.info(f"Successfully indexed/updated {len(chunks)} chunks for document: {document.title}")
+
+def delete_document_from_index(document_id: int):
+    """Deletes all chunks associated with a document ID from ChromaDB."""
+    if not documents_collection:
+        return
+    # We can use a 'where' filter to find all chunks for this document
+    documents_collection.delete(where={"document_id": document_id})
+    logger.info(f"Successfully deleted chunks for document ID: {document_id}")
+
+
+def search_documents(query: str, n_results: int = 3):
+    """Searches the 'documents' collection for the most relevant text chunks."""
+    if not documents_collection or not embedding_model:
+        return []
+
+    query_embedding = embedding_model.encode(query).tolist()
+    
+    results = documents_collection.query(
+        query_embeddings=[query_embedding],
+        n_results=n_results
+    )
+    
+    # We return the actual text content of the chunks
+    return results.get('documents', [[]])[0]

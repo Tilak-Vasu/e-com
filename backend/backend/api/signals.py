@@ -8,6 +8,9 @@ import google.generativeai as genai
 import json
 import logging
 from django.db import transaction
+from django.db.models.signals import post_save, post_delete # <-- Add post_delete
+from .models import PolicyDocument # <-- Add PolicyDocument
+from .vector_db import index_document, delete_document_from_index # <-- Import new functions
 
 logger = logging.getLogger(__name__)
 genai.configure(api_key=settings.GEMINI_API_KEY)
@@ -98,3 +101,31 @@ def on_order_saved(sender, instance, **kwargs): #<-- Simplified signature
         index_single_order(instance)
     except Exception as e:
         logger.error(f"Failed to automatically index order {instance.id}: {e}")
+
+
+
+# --- NEW SIGNALS FOR POLICY DOCUMENTS ---
+
+@receiver(post_save, sender=PolicyDocument)
+def on_document_save(sender, instance, **kwargs):
+    """
+    When a PolicyDocument is saved (created or updated),
+    index its content into the vector DB.
+    """
+    print(f"Policy document '{instance.title}' saved. Indexing content...")
+    try:
+        index_document(instance)
+    except Exception as e:
+        logger.error(f"Failed to index document {instance.id} on save: {e}")
+
+@receiver(post_delete, sender=PolicyDocument)
+def on_document_delete(sender, instance, **kwargs):
+    """
+    When a PolicyDocument is deleted, remove its content
+    from the vector DB.
+    """
+    print(f"Policy document '{instance.title}' deleted. Removing from index...")
+    try:
+        delete_document_from_index(instance.id)
+    except Exception as e:
+        logger.error(f"Failed to delete document {instance.id} from index: {e}")

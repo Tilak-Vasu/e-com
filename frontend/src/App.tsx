@@ -86,7 +86,7 @@ import AdminDashboardPage from './pages/AdminDashboardPage';
 import ChatWidget from './components/chat/ChatWidget';
 // <<< 1. IMPORT THE NEW PAGE COMPONENT
 import AdminProductManagementPage from './pages/AdminProductManagementPage';
-
+import DocumentAssistantPage from './pages/DocumentAssistantPage';
 const App: React.FC = () => {
   return (
     <>
@@ -116,6 +116,8 @@ const App: React.FC = () => {
               <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
               {/* <<< 2. ADD THE NEW ADMIN ROUTE HERE */}
               <Route path="/admin/products" element={<AdminProductManagementPage />} />
+              <Route path="/admin/documents" element={<DocumentAssistantPage />} />
+
             </Route>
 
             {/* --- CATCH-ALL ROUTE --- */}
