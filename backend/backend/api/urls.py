@@ -9,6 +9,8 @@ from .views import (
     LikedProductListView, OrderListCreateView, AdminDashboardView,
     ChatThreadView, CreatePaymentIntentView
 )
+from .views import AdminChatbotView
+
 from .views import CartView ,ChatbotView# Import the new view
 from .views import PolicyDocumentViewSet
 router = DefaultRouter()
@@ -33,6 +35,7 @@ urlpatterns = [
     path('chat_threads/', ChatThreadView.as_view(), name='chat-thread-list'),
     # --- ADMIN ---
     path('admin/dashboard/', AdminDashboardView.as_view(), name='admin-dashboard'),
+    path('admin-chatbot/', AdminChatbotView.as_view(), name='admin-chatbot'),
 
     path('cart/', CartView.as_view(), name='user-cart'), # <-- ADD THIS LINE
     path('chatbot/', ChatbotView.as_view(), name='chatbot'), # <-- ADD THIS LINE

@@ -26,6 +26,7 @@ from .models import (
     Product, LikedProduct, Order, OrderItem, ChatThread, ProductReview
 )
 from .serializers import (
+    ChatMessageSerializer,
     UserSerializer,
     ProductReadSerializer, # Use the correct read/write serializers
     ProductWriteSerializer,
@@ -91,7 +92,7 @@ stripe.api_key = settings.STRIPE_SECRET_KEY
 #     """
 
 #     try:
-#         model = genai.GenerativeModel('models/gemini-1.5-flash')
+#         model = genai.GenerativeModel('models/gemini-2.5-flash')
 #         safety_settings = [ {"category": c, "threshold": "BLOCK_ONLY_HIGH"} for c in ["HARM_CATEGORY_HARASSMENT", "HARM_CATEGORY_HATE_SPEECH", "HARM_CATEGORY_SEXUALLY_EXPLICIT", "HARM_CATEGORY_DANGEROUS_CONTENT"]]
         
 #         response = model.generate_content(prompt, safety_settings=safety_settings)
@@ -158,7 +159,7 @@ def get_batch_ai_inventory_insights(problem_products):
     """
 
     try:
-        model = genai.GenerativeModel('models/gemini-1.5-flash')
+        model = genai.GenerativeModel('models/gemini-2.5-flash')
         safety_settings = [ {"category": c, "threshold": "BLOCK_ONLY_HIGH"} for c in ["HARM_CATEGORY_HARASSMENT", "HARM_CATEGORY_HATE_SPEECH", "HARM_CATEGORY_SEXUALLY_EXPLICIT", "HARM_CATEGORY_DANGEROUS_CONTENT"]]
         
         response = model.generate_content(prompt, safety_settings=safety_settings)
@@ -277,7 +278,7 @@ class ProductViewSet(viewsets.ModelViewSet):
                 image,
             ]
 
-            model = genai.GenerativeModel('models/gemini-1.5-flash')
+            model = genai.GenerativeModel('models/gemini-2.5-flash')
             response = model.generate_content(prompt_parts)
             
             decision = response.text.strip().upper()
@@ -446,7 +447,7 @@ class ProductViewSet(viewsets.ModelViewSet):
             import google.generativeai as genai
             
             # Initialize the model
-            model = genai.GenerativeModel('models/gemini-1.5-flash')
+            model = genai.GenerativeModel('models/gemini-2.5-flash')
             
             # Configure safety settings
             safety_settings = [
@@ -969,19 +970,25 @@ class AdminDashboardView(APIView):
 
 class ChatThreadView(generics.ListCreateAPIView):
     """
-    Handles the creation and listing of chat threads.
-    - Customers can see and create their own single thread.
-    - Staff can see a list of the most recent thread for each customer.
+    Handles the creation and listing of LIVE SUPPORT chat threads.
+    - Customers can see and create their own single support thread.
+    - Staff can see a list of the most recent support thread for each customer.
     """
     serializer_class = ChatThreadSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
+        """
+        Filters threads to only show 'LIVE_SUPPORT' type.
+        """
         user = self.request.user
         if user.is_staff:
-            # For staff, get the latest thread for each unique customer
             customer_threads, seen_customers = {}, set()
-            all_customer_threads = ChatThread.objects.filter(participants__is_staff=False).distinct().order_by('-updated_at')
+            all_customer_threads = ChatThread.objects.filter(
+                thread_type='LIVE_SUPPORT', 
+                participants__is_staff=False
+            ).distinct().order_by('-updated_at')
+
             for thread in all_customer_threads:
                 customer = thread.participants.filter(is_staff=False).first()
                 if customer and customer.id not in seen_customers:
@@ -989,16 +996,22 @@ class ChatThreadView(generics.ListCreateAPIView):
                     seen_customers.add(customer.id)
             return list(customer_threads.values())
         else:
-            # For customers, just get their own thread
-            return ChatThread.objects.filter(participants=user)
+            return ChatThread.objects.filter(participants=user, thread_type='LIVE_SUPPORT')
 
     def create(self, request, *args, **kwargs):
-        user = request.user
+        """
+        Ensures a customer can only have one LIVE_SUPPORT thread.
+        If one exists, it's returned. If not, a new one is created.
+        """
+        user = self.request.user
         if user.is_staff:
-            return Response({"error": "Staff cannot create threads this way."}, status=status.HTTP_403_FORBIDDEN)
+            return Response({"error": "Staff cannot create support threads this way."}, status=status.HTTP_403_FORBIDDEN)
         
-        # If the customer already has a thread, return it instead of creating a new one
-        existing_thread = ChatThread.objects.filter(participants=user).first()
+        existing_thread = ChatThread.objects.filter(
+            participants=user,
+            thread_type='LIVE_SUPPORT'
+        ).first()
+        
         if existing_thread:
             serializer = self.get_serializer(existing_thread)
             return Response(serializer.data, status=status.HTTP_200_OK)
@@ -1006,11 +1019,21 @@ class ChatThreadView(generics.ListCreateAPIView):
         return super().create(request, *args, **kwargs)
 
     def perform_create(self, serializer):
+        """
+        When a new live support thread is created, it is automatically
+        assigned the 'LIVE_SUPPORT' type and includes all staff.
+        """
         customer = self.request.user
         staff_users = User.objects.filter(is_staff=True, is_active=True)
         participants = [customer] + list(staff_users)
-        serializer.save(participants=participants)
-
+        
+        # Note: Serializer 'save' can handle M2M if passed as a list,
+        # but the direct 'create' in the original error cannot.
+        serializer.save(
+            participants=participants,
+            thread_type='LIVE_SUPPORT',
+            name=f'Support Chat - {customer.username}'
+        )
 
 from .models import UserCart, CartItem # Import the new models
 from .serializers import UserCartSerializer # Import the new serializer
@@ -1280,7 +1303,7 @@ class ChatbotView(APIView):
         NEWEST QUESTION: "{user_query}"
         """
 
-        model = genai.GenerativeModel('models/gemini-1.5-flash')
+        model = genai.GenerativeModel('models/gemini-2.5-flash')
         main_response = await model.generate_content_async(final_prompt)
         ai_response_text = main_response.text.strip()
         
@@ -1289,3 +1312,282 @@ class ChatbotView(APIView):
             await self.save_chat_message(thread, ai_user, ai_response_text)
         
         return ai_response_text
+    
+
+
+
+logger = logging.getLogger(__name__)
+
+# ==========================================================
+# --- FINAL LANGCHAIN-POWERED ADMIN CHATBOT VIEW ---
+# ==========================================================
+
+
+
+# --- Import your tools ---
+from .chatbot_tools import (
+    get_order_history,
+    get_order_information,
+    get_product_information,
+    get_policy_information,
+    check_inventory_status
+)
+
+
+logger = logging.getLogger(__name__)
+
+
+
+# class AdminChatbotView(APIView):
+#     permission_classes = [permissions.IsAdminUser]
+
+#     # --- ASYNC DATABASE HELPERS (NO CHANGES) ---
+#     @sync_to_async
+#     def get_or_create_ai_thread(self, user):
+#         thread, _ = ChatThread.objects.get_or_create(thread_type='AI_ASSISTANT', defaults={'name': f'AI Assistant - {user.username}'})
+#         if not thread.participants.filter(id=user.id).exists():
+#             thread.participants.add(user)
+#         return thread
+
+#     @sync_to_async
+#     def get_chat_history(self, thread):
+#         messages = ChatMessage.objects.filter(thread=thread).order_by('-timestamp')[:10]
+#         return "\n".join(f"{'User' if not msg.sender.is_staff else 'Assistant'}: {msg.text}" for msg in reversed(messages))
+
+#     @sync_to_async
+#     def save_chat_message(self, thread, user, text):
+#         return ChatMessage.objects.create(thread=thread, sender=user, text=text)
+
+#     @sync_to_async
+#     def get_ai_user(self):
+#         ai_user, _ = User.objects.get_or_create(username='ai_assistant', defaults={'email': 'ai@system.local', 'first_name': 'AI', 'last_name': 'Assistant', 'is_staff': True, 'is_active': True})
+#         return ai_user
+
+#     # --- GET/POST METHODS (NO CHANGES) ---
+#     def get(self, request, *args, **kwargs):
+#         try:
+#             thread = async_to_sync(self.get_or_create_ai_thread)(request.user)
+#             messages = ChatMessage.objects.filter(thread=thread).order_by('timestamp')
+#             return Response(ChatMessageSerializer(messages, many=True).data)
+#         except Exception as e:
+#             logger.error(f"Error fetching admin chat history: {e}", exc_info=True)
+#             return Response({"error": "Could not retrieve chat history."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+#     def post(self, request, *args, **kwargs):
+#         user_query = request.data.get('query')
+#         if not user_query:
+#             return Response({"error": "Query is required."}, status=status.HTTP_400_BAD_REQUEST)
+#         try:
+#             response_text = async_to_sync(self._process_chat_async)(request.user, user_query)
+#             return Response({"response": response_text})
+#         except Exception as e:
+#             logger.error(f"Admin chatbot error: {e}", exc_info=True)
+#             return Response({"error": "An error occurred with the AI assistant."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+#     # --- CORE ASYNC PROCESSING LOGIC ---
+#     async def _process_chat_async(self, user, user_query):
+#         thread = await self.get_or_create_ai_thread(user)
+#         await self.save_chat_message(thread, user, user_query)
+#         chat_history = await self.get_chat_history(thread)
+
+#         # FIX 1: THE "SMART & INTERACTIVE ROUTER" PROMPT
+#         routing_prompt = f"""
+#         You are an expert router. Your job is to select the correct tool to answer a user's question, or to decide if no tool is needed.
+#         Respond with ONLY the tool name from the list below.
+
+#         --- TOOL OPTIONS ---
+
+#         1. get_order_information: For questions about sales, revenue, business performance, or specific order details. Use for queries involving numbers, totals, dates, or calculations like "best-selling".
+#            - EXAMPLES: "How much revenue last month?", "Who are our best-selling products?", "Show order #1234."
+
+#         2. check_inventory_status: ONLY for questions about product stock levels, like "what is out of stock?" or "what is low on stock?".
+#            - EXAMPLES: "Which products are out of stock?", "Show me low inventory items."
+
+#         3. get_product_information: For general, descriptive searches of the product catalog. Does NOT know about sales or stock.
+#            - EXAMPLES: "Find a warm winter jacket.", "Do we sell waterproof boots?"
+
+#         4. get_policy_information: For questions about company policies like returns or shipping.
+#            - EXAMPLES: "What is our return policy?", "How long does shipping take?"
+        
+#         5. None: Use this if the user's message is a simple greeting, small talk, a thank you, or a conversational remark that does not require any data or tools to answer.
+#            - EXAMPLES: "Hi there", "hello", "thanks", "ok cool", "what can you do?"
+
+#         ---
+#         USER QUESTION: "{user_query}"
+#         ---
+#         Based on the user question and the tool options, which is the single best choice?
+#         """
+#         model = genai.GenerativeModel('models/gemini-2.5-flash')
+#         response = await model.generate_content_async(routing_prompt)
+#         tool_name = response.text.strip().replace('"', '')
+
+#         # EXECUTE THE CHOSEN TOOL OR HANDLE CONVERSATION
+#         tool_result = ""
+#         if "None" in tool_name:
+#             # FIX 2: HANDLE CONVERSATION GRACEFULLY
+#             logger.info(f"Router chose 'None' for a conversational query: {user_query}")
+#             tool_result = "No tool was needed. The user is just having a conversation."
+#         elif "get_order_information" in tool_name:
+#             # FIX 3: Use the .arun() method for async tool execution
+#             tool_result = await get_order_information.arun(user_query)
+#         elif "check_inventory_status" in tool_name:
+#             tool_result = await check_inventory_status.arun(user_query)
+#         elif "get_product_information" in tool_name:
+#             tool_result = await get_product_information.arun(user_query)
+#         elif "get_policy_information" in tool_name:
+#             tool_result = await get_policy_information.arun(user_query)
+#         else:
+#             logger.warning(f"Router unsure (chose '{tool_name}'). Defaulting to a conversational response for: {user_query}")
+#             tool_result = "No specific tool seemed to match the query. Attempting a general response."
+        
+#         if not tool_result:
+#             tool_result = "No specific information was found with the available tools."
+
+#         # SYNTHESIZE AND SAVE FINAL RESPONSE (NO CHANGES NEEDED HERE)
+#         final_prompt = self.get_improved_final_prompt(user_query, chat_history, tool_result)
+#         final_response = await model.generate_content_async(final_prompt)
+#         ai_response_text = final_response.text
+        
+#         ai_user = await self.get_ai_user()
+#         await self.save_chat_message(thread, ai_user, ai_response_text)
+        
+#         return ai_response_text
+
+#     def get_improved_final_prompt(self, user_query, chat_history, tool_result):
+#         return f"""
+#         You are a helpful, professional, and friendly AI assistant for an e-commerce admin.
+#         Here is the recent conversation history: <history>{chat_history}</history>
+#         Here is the user's most recent question: <user_question>{user_query}</user_question>
+#         To answer this question, a specialized tool was run (or not, if it was conversational) and returned this information: <tool_data>{tool_result}</tool_data>
+#         Your task is to synthesize this information into a natural, conversational response.
+#         - If the tool data indicates a direct answer, use it.
+#         - If the tool data says it was a conversational query, just provide a friendly, helpful response. For example, if the user says "Hi", you say "Hello! How can I help you today?".
+#         - Be concise, clear, and friendly. Format your response with markdown (bullets, etc.) for readability.
+#         """
+
+
+class AdminChatbotView(APIView):
+    permission_classes = [permissions.IsAdminUser]
+
+    # --- ASYNC DATABASE HELPERS ---
+    @sync_to_async
+    def get_or_create_ai_thread(self, user):
+        thread, _ = ChatThread.objects.get_or_create(thread_type='AI_ASSISTANT', defaults={'name': f'AI Assistant - {user.username}'})
+        if not thread.participants.filter(id=user.id).exists(): thread.participants.add(user)
+        return thread
+
+    @sync_to_async
+    def get_chat_history(self, thread):
+        messages = ChatMessage.objects.filter(thread=thread).order_by('-timestamp')[:10]
+        return "\n".join(f"{'User' if not msg.sender.is_staff else 'Assistant'}: {msg.text}" for msg in reversed(messages))
+
+    @sync_to_async
+    def save_chat_message(self, thread, user, text):
+        return ChatMessage.objects.create(thread=thread, sender=user, text=text)
+
+    @sync_to_async
+    def get_ai_user(self):
+        ai_user, _ = User.objects.get_or_create(username='ai_assistant', defaults={'email': 'ai@system.local', 'first_name': 'AI', 'last_name': 'Assistant', 'is_staff': True, 'is_active': True})
+        return ai_user
+
+    # --- GET/POST METHODS ---
+    def get(self, request, *args, **kwargs):
+        try:
+            thread = async_to_sync(self.get_or_create_ai_thread)(request.user)
+            messages = ChatMessage.objects.filter(thread=thread).order_by('timestamp')
+            return Response(ChatMessageSerializer(messages, many=True).data)
+        except Exception as e:
+            logger.error(f"Error fetching admin chat history: {e}", exc_info=True)
+            return Response({"error": "Could not retrieve chat history."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def post(self, request, *args, **kwargs):
+        user_query = request.data.get('query')
+        if not user_query: return Response({"error": "Query is required."}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            response_text = async_to_sync(self._process_chat_async)(request.user, user_query)
+            return Response({"response": response_text})
+        except Exception as e:
+            logger.error(f"Admin chatbot error: {e}", exc_info=True)
+            return Response({"error": "An error occurred with the AI assistant."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    # --- CORE ASYNC PROCESSING LOGIC ---
+    async def _process_chat_async(self, user, user_query):
+        thread = await self.get_or_create_ai_thread(user)
+        await self.save_chat_message(thread, user, user_query)
+        chat_history = await self.get_chat_history(thread)
+
+        # <--- UPDATED ROUTER PROMPT ---
+        # This is the most critical change. The router is now much smarter.
+        routing_prompt = f"""
+        You are an expert router. Your job is to select the correct tool to answer a user's question, or to decide if no tool is needed.
+        Respond with ONLY the tool name from the list below.
+
+        --- TOOL OPTIONS ---
+        1. get_order_information: For questions about sales, revenue, totals, calculations, or business performance (e.g., "how did we do last month?", "what are our best-sellers?").
+        2. get_order_history: ONLY for requests to see or list individual orders from a time period (e.g., "show me yesterday's orders", "list recent orders").
+        3. check_inventory_status: ONLY for questions about product stock levels (e.g., "what is out of stock?").
+        4. get_product_information: For general, descriptive searches of the product catalog. Does NOT know about sales or stock.
+        5. get_policy_information: For questions about company policies like returns or shipping.
+        6. None: Use this for greetings, small talk, or conversational remarks that don't need data.
+        ---
+        USER QUESTION: "{user_query}"
+        ---
+        Based on the user question and the tool options, which is the single best choice?
+        """
+        model = genai.GenerativeModel('models/gemini-2.5-flash')
+        response = await model.generate_content_async(routing_prompt)
+        tool_name = response.text.strip().replace('"', '')
+
+        # <--- UPDATED TOOL EXECUTION LOGIC ---
+        tool_result = ""
+        if "None" in tool_name:
+            tool_result = "No tool was needed. The user is just having a conversation."
+        elif "get_order_information" in tool_name:
+            tool_result = await get_order_information.arun(user_query)
+        elif "get_order_history" in tool_name: # Added the new tool here
+            tool_result = await get_order_history.arun(user_query)
+        elif "check_inventory_status" in tool_name:
+            tool_result = await check_inventory_status.arun(user_query)
+        elif "get_product_information" in tool_name:
+            tool_result = await get_product_information.arun(user_query)
+        elif "get_policy_information" in tool_name:
+            tool_result = await get_policy_information.arun(user_query)
+        else:
+            logger.warning(f"Router unsure (chose '{tool_name}'). Defaulting to a conversational response for: {user_query}")
+            tool_result = "No specific tool seemed to match the query. Attempting a general response."
+        
+        if not tool_result: tool_result = "No specific information was found with the available tools."
+
+        # --- Final Response Synthesis (no changes here) ---
+        final_prompt = self.get_improved_final_prompt(user_query, chat_history, tool_result)
+        final_response = await model.generate_content_async(final_prompt)
+        ai_response_text = final_response.text
+        
+        ai_user = await self.get_ai_user()
+        await self.save_chat_message(thread, ai_user, ai_response_text)
+        
+        return ai_response_text
+
+    def get_improved_final_prompt(self, user_query, chat_history, tool_result):
+        # Final, hardened prompt to ensure direct answers.
+        return f"""
+        You are Gem, an AI assistant. Your task is to provide a direct, professional answer to the user's question based on the data provided.
+
+        **User's Latest Question:**
+        <user_question>
+        {user_query}
+        </user_question>
+
+        **Data from Internal Tool:**
+        <tool_data>
+        {tool_result}
+        </tool_data>
+
+        --- INSTRUCTIONS ---
+        1.  Synthesize the `<tool_data>` into a clear, professional answer to the `<user_question>`.
+        2.  **CRITICAL:** Start your response *directly* with the answer. Do NOT add conversational greetings like "Hi there!" or "Sure!".
+        3.  Use markdown (bolding, bullets) to format the data for easy reading.
+        4.  If the tool data says it was a greeting or conversational (e.g., "No tool was needed..."), then and ONLY then, respond with a simple greeting like "Hello! How can I help?".
+        """
+
+

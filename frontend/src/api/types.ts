@@ -133,3 +133,12 @@ export interface PolicyDocument {
   uploaded_at: string;
   updated_at: string;
 }
+
+
+export interface ApiChatMessage {
+  id: number;
+  timestamp: string;
+  username: string;
+  is_staff: boolean;
+  message: string;
+}

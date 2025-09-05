@@ -44,6 +44,7 @@
   --spacing-md: 12px;
   --spacing-lg: 16px;
   --spacing-xl: 24px;
+  --spacing-xxl: 30px; /* New: Increased gap for better spacing */
   
   /* Border Radius */
   --radius-sm: 4px;
@@ -68,10 +69,12 @@ body {
 /* --- Main Dashboard Grid Layout --- */
 .admin-dashboard-grid {
   display: grid;
-  grid-template-columns: repeat(8, 1fr); /* Changed from 6 to 8 columns for better flexibility */
-  gap: var(--spacing-xl);
+  /* UPDATED: Changed to 4 equal-width columns */
+  grid-template-columns: repeat(4, 1fr); 
+  /* UPDATED: Increased gap size */
+  gap: var(--spacing-xxl);
   padding: var(--spacing-xl);
-  max-width: 1400px;
+  max-width: 1600px; /* Increased max width */
   margin: 0 auto;
   min-height: 100vh;
 }
@@ -106,24 +109,23 @@ body {
 
 /* --- Widget Placement --- */
 .kpi-card { 
-  grid-column: span 2; /* Each KPI takes 2 columns out of 8 = 4 KPIs per row */
-  max-width: none; /* Remove any width constraints */
+  grid-column: span 1; /* Each KPI takes 1 of 4 columns */
 }
 
 .main-chart { 
-  grid-column: 1 / -1; 
+  grid-column: 1 / -1; /* Spans all 4 columns */
 }
 
 .donut-chart-widget { 
-  grid-column: span 3; /* Adjusted for 8-column grid */
+  grid-column: span 2; /* Spans 2 of 4 columns */
 }
 
 .recent-transactions-widget { 
-  grid-column: span 5; /* Adjusted for 8-column grid */
+  grid-column: span 2; /* Spans 2 of 4 columns */
 }
 
 .inventory-insights-widget { 
-  grid-column: 1 / -1; 
+  grid-column: 1 / -1; /* Spans all 4 columns */
 }
 
 /* --- KPI Card Styles --- */
@@ -154,6 +156,7 @@ body {
 
 .kpi-content {
   flex: 1;
+  min-width: 0; /* Fixes flexbox overflow issue with long text */
 }
 
 .kpi-value { 
@@ -162,10 +165,14 @@ body {
   line-height: 1.1;
   color: var(--text-primary);
   margin: 0 0 var(--spacing-xs) 0;
+  /* ADDED: Prevents text from wrapping and adds ellipsis if it overflows */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .kpi-title { 
-  font-size: 0.9rem; 
+  font-size: 0.7rem; 
   color: var(--text-secondary);
   margin: 0;
   text-transform: uppercase;
@@ -181,28 +188,6 @@ body {
 
 .nav-kpi-link:hover {
   text-decoration: none;
-}
-
-.nav-kpi-card {
-  transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
-}
-
-.nav-kpi-card:hover {
-  background-color: var(--bg-hover);
-  cursor: pointer;
-}
-
-.nav-kpi-title {
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--text-primary);
-  margin: 0 0 var(--spacing-xs) 0;
-}
-
-.kpi-description {
-  font-size: 0.85rem;
-  color: var(--text-secondary);
-  margin: 0;
 }
 
 /* --- Widget Headers and Controls --- */
@@ -486,68 +471,23 @@ body {
   width: 100%;
 }
 
-.recent-transactions-widget th:nth-child(1) { 
-  width: 40%; 
-  min-width: 180px;
-  text-align: left;
-} 
-
-.recent-transactions-widget th:nth-child(2) { 
-  width: 30%; 
-  min-width: 120px;
-  text-align: center;
-} 
-
-.recent-transactions-widget th:nth-child(3) { 
-  width: 30%; 
-  min-width: 100px;
-  text-align: right;
-}
-
-.recent-transactions-widget td:nth-child(1) {
-  text-align: left;
-  vertical-align: top;
-}
-
-.recent-transactions-widget td:nth-child(2) { 
-  text-align: center;
-  vertical-align: middle;
-}
-
-.recent-transactions-widget td:nth-child(3) { 
-  text-align: right;
-  vertical-align: middle;
-}
+.recent-transactions-widget th:nth-child(1) { width: 40%; min-width: 180px; text-align: left; } 
+.recent-transactions-widget th:nth-child(2) { width: 30%; min-width: 120px; text-align: center; } 
+.recent-transactions-widget th:nth-child(3) { width: 30%; min-width: 100px; text-align: right; }
+.recent-transactions-widget td:nth-child(1) { text-align: left; vertical-align: top; }
+.recent-transactions-widget td:nth-child(2) { text-align: center; vertical-align: middle; }
+.recent-transactions-widget td:nth-child(3) { text-align: right; vertical-align: middle; }
 
 /* --- Inventory Insights Table Specific Styles --- */
-.inventory-insights-widget table { 
-  table-layout: auto;
-  min-width: 100%;
-}
-
-.inventory-insights-widget th:nth-child(1) { 
-  width: 35%; 
-  min-width: 200px; 
-} 
-
+.inventory-insights-widget table { table-layout: auto; min-width: 100%; }
+.inventory-insights-widget th:nth-child(1) { width: 35%; min-width: 200px; } 
 .inventory-insights-widget th:nth-child(2), 
 .inventory-insights-widget th:nth-child(3), 
-.inventory-insights-widget th:nth-child(4) { 
-  width: 12%; 
-  min-width: 100px; 
-  text-align: center; 
-} 
-
-.inventory-insights-widget th:nth-child(5) { 
-  width: 29%; 
-  min-width: 180px; 
-}
-
+.inventory-insights-widget th:nth-child(4) { width: 12%; min-width: 100px; text-align: center; } 
+.inventory-insights-widget th:nth-child(5) { width: 29%; min-width: 180px; }
 .inventory-insights-widget td:nth-child(2), 
 .inventory-insights-widget td:nth-child(3), 
-.inventory-insights-widget td:nth-child(4) { 
-  text-align: center; 
-}
+.inventory-insights-widget td:nth-child(4) { text-align: center; }
 
 /* --- Loading and Error States --- */
 .dashboard-loading, 
@@ -563,70 +503,36 @@ body {
   gap: var(--spacing-lg);
 }
 
-.dashboard-loading::before { 
-  content: "⏳"; 
-  font-size: 2rem;
-  animation: spin 2s linear infinite;
-}
-
-.dashboard-error::before { 
-  content: "❌"; 
-  font-size: 2rem;
-}
-
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
+.dashboard-loading::before { content: "⏳"; font-size: 2rem; animation: spin 2s linear infinite; }
+.dashboard-error::before { content: "❌"; font-size: 2rem; }
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
 /* --- Responsive Design --- */
-
-/* Large desktops - keep 4 KPIs in one row */
-@media (min-width: 1200px) {
-  .admin-dashboard-grid {
-    max-width: 1600px;
-  }
-}
-
-/* Standard desktop */
-@media (max-width: 1199px) {
-  .kpi-card { 
-    grid-column: span 2; /* Still 4 per row on 8-column grid */
-  }
-}
 
 /* Large tablets and small desktops - 2 KPIs per row */
 @media (max-width: 1024px) {
   .admin-dashboard-grid { 
-    grid-template-columns: repeat(4, 1fr); 
+    grid-template-columns: repeat(2, 1fr); 
   }
   
   .kpi-card { 
-    grid-column: span 2; /* 2 KPIs per row on 4-column grid */
+    grid-column: span 1; /* Each KPI takes 1 of 2 columns */
   }
   
-  .donut-chart-widget { 
-    grid-column: span 2; 
-  }
-  
+  .donut-chart-widget,
   .recent-transactions-widget { 
-    grid-column: span 2; 
+    grid-column: span 2; /* Spans the full width (2 columns) */
   }
   
   .inventory-insights-widget { 
     grid-column: 1 / -1; 
   }
 
-  .chart-container { 
-    height: 300px; 
-  }
-  
-  .chart-container-donut { 
-    height: 220px; 
-  }
+  .chart-container { height: 300px; }
+  .chart-container-donut { height: 220px; }
 }
 
-/* Tablets - 1 KPI per row */
+/* Tablets & Mobile - 1 KPI per row */
 @media (max-width: 768px) {
   .admin-dashboard-grid { 
     grid-template-columns: 1fr; 
@@ -659,17 +565,9 @@ body {
     justify-content: center; 
   }
   
-  .chart-container { 
-    height: 280px; 
-  }
-  
-  .chart-container-donut { 
-    height: 200px; 
-  }
-
-  .dashboard-header {
-    font-size: 1.75rem;
-  }
+  .chart-container { height: 280px; }
+  .chart-container-donut { height: 200px; }
+  .dashboard-header { font-size: 1.75rem; }
 }
 
 /* Mobile phones */
@@ -679,87 +577,21 @@ body {
     gap: var(--spacing-md);
   }
   
-  .dashboard-widget { 
-    padding: var(--spacing-lg);
-  }
-  
-  .dashboard-header { 
-    font-size: 1.5rem;
-    padding-bottom: var(--spacing-sm);
-  }
-.kpi-card {
-  grid-column: span 2;
-  width: 100%;         /* Force equal width */
-  justify-content: space-between; /* Keep content aligned */
-}
-
-  .kpi-icon-wrapper { 
-    width: 50px; 
-    height: 50px; 
-    font-size: 1.5rem; 
-  }
-  
-  .kpi-value { 
-    font-size: 1.5rem; 
-  }
-  
-  .chart-container { 
-    height: 250px; 
-  }
-  
-  .chart-container-donut { 
-    height: 180px; 
-  }
-
-  .chart-toggle button {
-    padding: var(--spacing-xs) var(--spacing-md);
-    font-size: 0.8rem;
-  }
-
-  .table-widget th,
-  .table-widget td {
-    padding: var(--spacing-sm) var(--spacing-xs);
-    font-size: 0.8rem;
-  }
-
-  .status-pill {
-    font-size: 0.7rem;
-    padding: 2px var(--spacing-sm);
-  }
+  .dashboard-widget { padding: var(--spacing-lg); }
+  .dashboard-header { font-size: 1.5rem; padding-bottom: var(--spacing-sm); }
+  .kpi-icon-wrapper { width: 50px; height: 50px; font-size: 1.5rem; }
+  .kpi-value { font-size: 1.5rem; }
+  .chart-container { height: 250px; }
+  .chart-container-donut { height: 180px; }
+  .chart-toggle button { padding: var(--spacing-xs) var(--spacing-md); font-size: 0.8rem; }
+  .table-widget th, .table-widget td { padding: var(--spacing-sm) var(--spacing-xs); font-size: 0.8rem; }
+  .status-pill { font-size: 0.7rem; padding: 2px var(--spacing-sm); }
 }
 
 /* Extra small devices */
 @media (max-width: 360px) {
-  .admin-dashboard-grid {
-    padding: var(--spacing-sm);
-  }
-  
-  .dashboard-widget {
-    padding: var(--spacing-md);
-  }
-  
-  .widget-header {
-    gap: var(--spacing-sm);
-  }
-  
-  .all-controls-wrapper {
-    gap: var(--spacing-sm);
-  }
-}
-
-
-.kpi-card .kpi-value {
-  white-space: nowrap;  /* Prevent breaking into two lines */
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-
-
-.kpi-card {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start; /* or space-between if you want them spread */
-  gap: 16px; /* spacing between icon and text */
-  padding: 20px; /* spacing inside card */
+  .admin-dashboard-grid { padding: var(--spacing-sm); }
+  .dashboard-widget { padding: var(--spacing-md); }
+  .widget-header { gap: var(--spacing-sm); }
+  .all-controls-wrapper { gap: var(--spacing-sm); }
 }

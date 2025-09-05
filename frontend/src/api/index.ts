@@ -11,7 +11,9 @@ import type {
   UserRegistrationData,
   OrderPayload,
   Review, // Import the Review type for the new functions
-  PolicyDocument
+  PolicyDocument,
+  ApiChatMessage // <-- IMPORT THE NEW TYPE
+
 } from './types';
 
 // ====================================================================
@@ -181,4 +183,13 @@ export const verifyImageAPI = (formData: FormData): Promise<AxiosResponse<{ matc
       'Content-Type': 'multipart/form-data',
     },
   });
+};
+
+
+export const askAdminChatbotAPI = (query: string): Promise<AxiosResponse<{ response: string }>> => {
+  return api.post('/admin-chatbot/', { query });
+};
+
+export const getAdminChatHistoryAPI = (): Promise<AxiosResponse<ApiChatMessage[]>> => {
+  return api.get('/admin-chatbot/');
 };

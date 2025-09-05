@@ -320,7 +320,7 @@ const AdminDashboardPage: React.FC = () => {
             <KPICard title="Total Users" value={data.kpis.total_users} icon="👥" />
             <KPICard 
                 title="Document Assistant" 
-                value="Manage Docs" 
+                value="Policy Docs" 
                 icon="📄" 
                 to="/admin/documents" 
             />

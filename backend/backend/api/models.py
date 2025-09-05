@@ -61,7 +61,18 @@ class OrderItem(models.Model):
 
 
 class ChatThread(models.Model):
+    THREAD_TYPE_CHOICES = [
+        ('LIVE_SUPPORT', 'Live Support'),
+        ('AI_ASSISTANT', 'AI Assistant'),
+    ]
+    thread_type = models.CharField(
+        max_length=20,
+        choices=THREAD_TYPE_CHOICES,
+        default='LIVE_SUPPORT'
+    )
     # A thread can have multiple participants (the customer and all staff members)
+    name = models.CharField(max_length=255, blank=True, null=True, help_text="An optional name for the chat thread")
+
     participants = models.ManyToManyField(User, related_name='chat_threads')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

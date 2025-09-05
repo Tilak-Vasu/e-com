@@ -10,7 +10,14 @@ import logging
 from django.db import transaction
 from django.db.models.signals import post_save, post_delete # <-- Add post_delete
 from .models import PolicyDocument # <-- Add PolicyDocument
-from .vector_db import index_document, delete_document_from_index # <-- Import new functions
+from .vector_db import (
+    index_single_order, 
+    index_document, 
+    delete_document_from_index,
+    # --- NEW: Import the product indexing functions ---
+    index_single_product,
+    delete_product_from_index
+)
 
 logger = logging.getLogger(__name__)
 genai.configure(api_key=settings.GEMINI_API_KEY)
@@ -129,3 +136,51 @@ def on_document_delete(sender, instance, **kwargs):
         delete_document_from_index(instance.id)
     except Exception as e:
         logger.error(f"Failed to delete document {instance.id} from index: {e}")
+
+
+@receiver(post_save, sender=Product)
+def on_product_save(sender, instance, created, **kwargs):
+    """
+    When a Product is created or updated, this signal triggers two actions:
+    1. Generates AI tags if it's a new product.
+    2. Indexes/updates the product's data in the vector DB.
+    """
+    logger.info(f"Product saved (ID: {instance.id}). Triggering post-save signals...")
+    
+    # --- 1. AI Tag Generation for NEW products ---
+    if created and not instance.ai_tags:
+        product_details = f"Product Name: {instance.name}. Category: {instance.category}. Description: {instance.description or 'N/A'}. SEO Keywords: {instance.seo_keywords or 'N/A'}"
+        prompt = f"""
+        You are an e-commerce intelligence engine. Based on the product details below, generate a rich set of tags for internal system use (search and recommendations).
+        **Your response MUST be a single string of comma-separated values and nothing else.**
+        Generate 8 to 12 diverse, detailed keywords.
+        Product Details: {product_details}
+        """
+        try:
+            model = genai.GenerativeModel('models/gemini-1.5-flash')
+            response = model.generate_content(prompt)
+            tags = response.text.strip().lower()
+            
+            # Use .objects.filter().update() to avoid triggering the signal again
+            Product.objects.filter(pk=instance.pk).update(ai_tags=tags)
+            logger.info(f"Successfully generated AI tags for new product: {instance.name}")
+        except Exception as e:
+            logger.error(f"Error generating AI tags for {instance.name}: {e}")
+
+    # --- 2. Index the product in the vector DB (for both create and update) ---
+    try:
+        index_single_product(instance)
+    except Exception as e:
+        logger.error(f"Failed to automatically index product {instance.id} on save: {e}")
+
+
+@receiver(post_delete, sender=Product)
+def on_product_delete(sender, instance, **kwargs):
+    """
+    When a Product is deleted, remove it from the vector DB.
+    """
+    logger.info(f"Product deleted (ID: {instance.id}). Removing from vector index...")
+    try:
+        delete_product_from_index(instance.id)
+    except Exception as e:
+        logger.error(f"Failed to delete product {instance.id} from index: {e}")

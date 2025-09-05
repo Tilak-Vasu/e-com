@@ -87,6 +87,10 @@ import ChatWidget from './components/chat/ChatWidget';
 // <<< 1. IMPORT THE NEW PAGE COMPONENT
 import AdminProductManagementPage from './pages/AdminProductManagementPage';
 import DocumentAssistantPage from './pages/DocumentAssistantPage';
+import AdminChatbotPage from './pages/AdminChatbotPage.tsx'; // You will create this file next
+
+
+
 const App: React.FC = () => {
   return (
     <>
@@ -117,6 +121,7 @@ const App: React.FC = () => {
               {/* <<< 2. ADD THE NEW ADMIN ROUTE HERE */}
               <Route path="/admin/products" element={<AdminProductManagementPage />} />
               <Route path="/admin/documents" element={<DocumentAssistantPage />} />
+              <Route path="/admin/chatbot" element={<AdminChatbotPage />} />
 
             </Route>
 

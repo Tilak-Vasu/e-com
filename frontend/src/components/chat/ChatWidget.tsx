@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { useAuth } from "../../hooks/useAuth";
-import AdminChatView from "./AdminChatView";
+import AdminChatInterface from "./AdminChatInterface";
 import CustomerChatView from "./CustomerChatView";
 import { MessageCircle, X } from "lucide-react";
 import "./ChatWidget.css";
@@ -29,7 +29,7 @@ const ChatWidget: React.FC = () => {
         <div className="chat-window">
           <div className="chat-header">
             <span className="chat-title">
-              {user.is_staff ? "Support Dashboard" : "Live Chat"}
+              {user.is_staff ? "AI Assistant" : "Live Chat"}
             </span>
             <button className="chat-close-btn" onClick={handleToggleChat}>
               <X size={18} />
@@ -37,7 +37,7 @@ const ChatWidget: React.FC = () => {
           </div>
 
           {user.is_staff ? (
-            <AdminChatView key={chatKey} />
+            <AdminChatInterface key={chatKey} />
           ) : (
             <CustomerChatView key="customer-chat" onClose={handleToggleChat} />
           )}
