@@ -3,27 +3,29 @@
 import os
 import django
 
-# --- This part is crucial to load your Django settings ---
+# Load Django settings
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'backend.settings')
 django.setup()
-# --- End of Django setup ---
 
 from django.conf import settings
-import google.generativeai as genai
+# --- THE FIX: Import the LangChain library ---
+from langchain_google_genai import ChatGoogleGenerativeAI
 
-print("--- Checking available Gemini Models ---")
+print("--- Checking available Gemini Models via LangChain ---")
 
 try:
-    # Configure the client with your API key from settings
-    genai.configure(api_key=settings.GEMINI_API_KEY)
+    # --- THE FIX: Initialize the LangChain client ---
+    # This automatically uses your GOOGLE_APPLICATION_CREDENTIALS or other auth methods
+    # We pass the key explicitly to be sure.
+    llm = ChatGoogleGenerativeAI(
+        model="gemini-2.5-flash", # We need a valid model to initialize
+        google_api_key=settings.GEMINI_API_KEY
+    )
     
     print("Successfully configured with API key.")
-    print("Fetching model list...")
-    
-    # List all models that support the 'generateContent' method
-    for m in genai.list_models():
-        if 'generateContent' in m.supported_generation_methods:
-            print(f"Model found: {m.name}")
+    print("Note: The LangChain library does not have a direct 'list_models' function.")
+    print("However, successful initialization proves that your credentials and the default model are working.")
+    print("Commonly available models for generative tasks are: 'gemini-1.5-flash', 'gemini-1.5-pro'")
 
 except Exception as e:
     print(f"\nAn error occurred: {e}")

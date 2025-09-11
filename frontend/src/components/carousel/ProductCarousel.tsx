@@ -45,9 +45,27 @@ const ProductCarousel: React.FC<ProductCarouselProps> = ({ products }) => {
   const details = instanceRef.current?.track?.details;
   const totalSlides = details?.slides.length ?? 0;
   
-  // --- UPDATED LINE ---
-  // Get the perView from the slider's options, which correctly reflects the active breakpoint.
-  const perView = instanceRef.current?.options.slides.perView ?? 1;
+  // --- CALCULATE PERVIEW BASED ON BREAKPOINTS ---
+  // Get current viewport width to determine the active perView
+  let perView = 1; // Default fallback
+  
+  if (typeof window !== 'undefined') {
+    const viewportWidth = window.innerWidth;
+    
+    // Apply the same breakpoint logic as defined in slider configuration
+    if (viewportWidth >= 1280) {
+      perView = 5;
+    } else if (viewportWidth >= 1024) {
+      perView = 4;
+    } else if (viewportWidth >= 768) {
+      perView = 3;
+    } else {
+      perView = 2;
+    }
+  }
+  
+  // Ensure we don't exceed the total number of products
+  perView = Math.min(perView, products.length);
 
   // 🔑 Next should lock when last product is visible
   const isNextDisabled = lockAll || currentSlide >= totalSlides - perView;

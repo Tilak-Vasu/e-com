@@ -3,7 +3,7 @@ from django.core.management.base import BaseCommand
 from django.conf import settings
 from django.db.models.signals import post_save
 from api.models import Product
-import google.generativeai as genai
+from langchain_google_genai import ChatGoogleGenerativeAI  # ✅ New import
 import time
 
 class Command(BaseCommand):
@@ -21,18 +21,12 @@ class Command(BaseCommand):
             self.stdout.write('No signals to disconnect.')
         
         try:
-            # Configure the API
-            genai.configure(api_key=settings.GEMINI_API_KEY)
-            
-            # FIX: Remove 'models/' prefix
-            model = genai.GenerativeModel('gemini-2.5-flash')
-            
-            safety_settings = [
-                {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_ONLY_HIGH"},
-                {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_ONLY_HIGH"},
-                {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_ONLY_HIGH"},
-                {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_ONLY_HIGH"}
-            ]
+            # ✅ Initialize Gemini via LangChain wrapper
+            model = ChatGoogleGenerativeAI(
+                model="gemini-2.5-flash",
+                google_api_key=settings.GEMINI_API_KEY,
+                temperature=0.4
+            )
             
             # Find products missing AI tags
             products_to_update = Product.objects.filter(ai_tags__isnull=True)
@@ -58,15 +52,14 @@ class Command(BaseCommand):
                 """
                 
                 try:
-                    response = model.generate_content(prompt, safety_settings=safety_settings)
+                    # ✅ Call Gemini through LangChain
+                    response = model.invoke(prompt)
                     
-                    # Check if response has content
-                    if not response.text:
+                    tags = response.content.strip().lower() if response and response.content else None
+                    
+                    if not tags:
                         self.stdout.write(self.style.ERROR(f'  Failed: Empty response from AI'))
                         continue
-                    
-                    # Clean the response
-                    tags = response.text.strip().lower()
                     
                     # Update the product
                     product.ai_tags = tags

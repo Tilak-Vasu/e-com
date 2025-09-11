@@ -1,0 +1,14 @@
+# kubernetes/4_frontend-service.yml
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-service
+  namespace: eshop-prod
+spec:
+  type: LoadBalancer # This will provision a cloud load balancer (e.g., on GKE, EKS, AKS)
+  selector:
+    app: frontend
+  ports:
+  - protocol: TCP
+    port: 80 # The public port
+    targetPort: 80 # The container's port

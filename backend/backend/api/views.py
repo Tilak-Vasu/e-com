@@ -106,6 +106,9 @@ stripe.api_key = settings.STRIPE_SECRET_KEY
 #         logger.error(f"Gemini API batch inventory insight failed: {e}")
 #         # On failure, return an empty map so the system doesn't crash
 #         return {}
+
+from langchain_google_genai import ChatGoogleGenerativeAI  # Updated import
+
 def get_batch_ai_inventory_insights(problem_products):
     """
     Takes a list of products with inventory issues (low stock OR unsold)
@@ -122,7 +125,8 @@ def get_batch_ai_inventory_insights(problem_products):
 
     # --- THE NEW, MORE POWERFUL PROMPT ---
     prompt = f"""
-    You are an expert e-commerce inventory analyst. Your task is to provide concise, actionable recommendations for a list of products with different inventory problems.
+    You are an expert e-commerce inventory analyst. Your task is to provide concise, actionable recommendations for 
+    a list of products with different inventory problems.
 
     Analyze the following list of products:
     {product_data_string}
@@ -159,12 +163,10 @@ def get_batch_ai_inventory_insights(problem_products):
     """
 
     try:
-        model = genai.GenerativeModel('models/gemini-2.5-flash')
-        safety_settings = [ {"category": c, "threshold": "BLOCK_ONLY_HIGH"} for c in ["HARM_CATEGORY_HARASSMENT", "HARM_CATEGORY_HATE_SPEECH", "HARM_CATEGORY_SEXUALLY_EXPLICIT", "HARM_CATEGORY_DANGEROUS_CONTENT"]]
+        model = ChatGoogleGenerativeAI(model="gemini-2.5-flash")
+        response = model.invoke(prompt)
         
-        response = model.generate_content(prompt, safety_settings=safety_settings)
-        
-        json_string = response.text.strip().replace("```json", "").replace("```", "")
+        json_string = response.content.strip().replace("```json", "").replace("```", "")
         ai_insights_map = json.loads(json_string)
 
         # Post-processing to add calculated order quantity for low stock items
@@ -228,9 +230,9 @@ from functools import reduce
 import operator
 
 logger = logging.getLogger(__name__)
-import google.generativeai as genai
+# import google.generativeai as genai
 import json
-genai.configure(api_key=settings.GEMINI_API_KEY)
+# genai.configure(api_key=settings.GEMINI_API_KEY)
 from django.db.models.functions import Coalesce
  
 from .moderation import moderate_text_with_gemini # Your new Gemini moderation function
@@ -257,6 +259,8 @@ class ProductViewSet(viewsets.ModelViewSet):
         # with a secondary sort by ID to ensure consistent ordering for items with equal sales.
         return queryset.order_by('-total_sold', '-id')
 
+    from langchain_google_genai import ChatGoogleGenerativeAI  # Updated import
+
     @action(detail=False, methods=['post'], url_path='verify-image', permission_classes=[permissions.IsAdminUser])
     def verify_image(self, request):
         product_name = request.data.get('name')
@@ -278,17 +282,17 @@ class ProductViewSet(viewsets.ModelViewSet):
                 image,
             ]
 
-            model = genai.GenerativeModel('models/gemini-2.5-flash')
-            response = model.generate_content(prompt_parts)
+            model = ChatGoogleGenerativeAI(model="gemini-2.5-flash")
+            response = model.invoke(prompt_parts)
             
-            decision = response.text.strip().upper()
+            decision = response.content.strip().upper()
 
             if "YES" in decision:
                 return Response({"match": True, "decision": "YES"}, status=status.HTTP_200_OK)
             elif "NO" in decision:
                 return Response({"match": False, "decision": "NO"}, status=status.HTTP_200_OK)
             else:
-                logger.warning(f"Unexpected image verification response: {response.text}")
+                logger.warning(f"Unexpected image verification response: {response.content}")
                 return Response({"match": True, "decision": "UNCLEAR_DEFAULT_YES"}, status=status.HTTP_200_OK)
 
         except Exception as e:
@@ -400,6 +404,8 @@ class ProductViewSet(viewsets.ModelViewSet):
     # --- 2. AI CONTENT GENERATION ENDPOINT FOR ADMINS ---
     # Improved generate_content method for your ProductViewSet
 
+    from langchain_google_genai import ChatGoogleGenerativeAI  # Updated import
+
     @action(detail=False, methods=['post'], url_path='generate-content', permission_classes=[permissions.IsAdminUser])
     def generate_content(self, request):
         """
@@ -443,36 +449,18 @@ class ProductViewSet(viewsets.ModelViewSet):
     """
 
         try:
-            # Import here to avoid import issues if not installed
-            import google.generativeai as genai
-            
-            # Initialize the model
-            model = genai.GenerativeModel('models/gemini-2.5-flash')
-            
-            # Configure safety settings
-            safety_settings = [
-                {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_ONLY_HIGH"},
-                {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_ONLY_HIGH"},
-                {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_ONLY_HIGH"},
-                {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_ONLY_HIGH"},
-            ]
-            
-            # Generate content
-            response = model.generate_content(prompt, safety_settings=safety_settings)
+            model = ChatGoogleGenerativeAI(model="gemini-2.5-flash")
+            response = model.invoke(prompt)
             
             # Check if response is blocked or empty
-            if not response.text:
-                finish_reason = 'UNKNOWN'
-                if response.candidates and len(response.candidates) > 0:
-                    finish_reason = response.candidates[0].finish_reason
-                    
+            if not response.content:
                 return Response({
-                    "error": f"AI service returned empty response. Reason: {finish_reason}",
+                    "error": "AI service returned empty response.",
                     "fallback_used": False
                 }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
             # Clean the response text
-            json_string = response.text.strip()
+            json_string = response.content.strip()
             
             # Remove common markdown artifacts
             if json_string.startswith("```json"):
@@ -488,8 +476,7 @@ class ProductViewSet(viewsets.ModelViewSet):
             try:
                 content = json.loads(json_string)
             except json.JSONDecodeError as json_error:
-                # Log the problematic response for debugging
-                logger.error(f"JSON parsing failed. Raw response: {response.text}")
+                logger.error(f"JSON parsing failed. Raw response: {response.content}")
                 logger.error(f"Cleaned string: {json_string}")
                 logger.error(f"JSON Error: {json_error}")
                 
@@ -504,14 +491,13 @@ class ProductViewSet(viewsets.ModelViewSet):
                     "fallback_used": True,
                     "message": "AI parsing failed, fallback content provided",
                     "debug_info": {
-                        "raw_response": response.text[:200] + "..." if len(response.text) > 200 else response.text,
+                        "raw_response": response.content[:200] + "..." if len(response.content) > 200 else response.content,
                         "json_error": str(json_error)
                     }
                 }, status=status.HTTP_200_OK)
             
             # Validate the parsed content has required keys
             if not isinstance(content, dict) or 'description' not in content or 'seo_keywords' not in content:
-                # Provide fallback content
                 content = {
                     "description": f"Discover the outstanding {product_name} from our {category} collection. This carefully crafted product offers exceptional value and performance, designed to meet the highest standards of quality and customer satisfaction.",
                     "seo_keywords": f"{product_name.lower()}, {category.lower()}, buy {product_name.lower()}, {category.lower()} online, premium {product_name.lower()}, best {category.lower()}"
@@ -530,23 +516,15 @@ class ProductViewSet(viewsets.ModelViewSet):
             if not content.get('seo_keywords', '').strip():
                 content['seo_keywords'] = f"{product_name.lower()}, {category.lower()}, buy {product_name.lower()}, {category.lower()} online"
             
-            # Return successful response
             return Response({
                 "data": content,
                 "fallback_used": False,
                 "message": "Content generated successfully"
             }, status=status.HTTP_200_OK)
             
-        except ImportError:
-            return Response({
-                "error": "Google Generative AI library not available",
-                "details": "Please install google-generativeai package"
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-            
         except Exception as e:
             logger.error(f"AI content generation error: {str(e)}", exc_info=True)
             
-            # Provide fallback content even for unexpected errors
             fallback_content = {
                 "description": f"Premium {product_name} from our {category} collection. This high-quality product is designed to deliver exceptional performance and value, meeting the needs of discerning customers who appreciate excellence.",
                 "seo_keywords": f"{product_name.lower()}, {category.lower()}, buy {product_name.lower()}, premium {category.lower()}, {product_name.lower()} online, quality {category.lower()}"
@@ -558,6 +536,7 @@ class ProductViewSet(viewsets.ModelViewSet):
                 "message": "AI service error, fallback content provided",
                 "error_details": str(e)
             }, status=status.HTTP_200_OK)
+
 
 
     # --- 3. AI RECOMMENDATIONS ENDPOINT FOR PRODUCT PAGES ---
@@ -1261,8 +1240,6 @@ class ChatbotView(APIView):
         )
         
         # --- BUILD COMBINED CONTEXT ---
-        
-        # Build the order context string
         order_context = "No relevant personal orders were found for this query."
         if relevant_orders:
             order_summaries = [
@@ -1271,13 +1248,11 @@ class ChatbotView(APIView):
             ]
             order_context = "Relevant User Order History:\n" + "\n".join(order_summaries)
 
-        # Build the policy document context string
         document_context = "No relevant company policies were found for this query."
         if relevant_docs:
             document_context = "Relevant Company Policy Information:\n---\n" + "\n---\n".join(relevant_docs)
 
         # --- FINAL PROMPT & GENERATION ---
-        
         final_prompt = f"""
         You are a helpful and friendly e-commerce assistant for 'E-Shop'.
         You have access to two sources of information: the user's personal order history and the company's official policy documents.
@@ -1303,9 +1278,9 @@ class ChatbotView(APIView):
         NEWEST QUESTION: "{user_query}"
         """
 
-        model = genai.GenerativeModel('models/gemini-2.5-flash')
-        main_response = await model.generate_content_async(final_prompt)
-        ai_response_text = main_response.text.strip()
+        model = ChatGoogleGenerativeAI(model="gemini-2.5-flash")
+        main_response = await model.ainvoke(final_prompt)
+        ai_response_text = main_response.content.strip()
         
         ai_user = await self.get_ai_user()
         if ai_user:
@@ -1511,13 +1486,14 @@ class AdminChatbotView(APIView):
             return Response({"error": "An error occurred with the AI assistant."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     # --- CORE ASYNC PROCESSING LOGIC ---
+    from langchain_google_genai import ChatGoogleGenerativeAI  # updated import
+
     async def _process_chat_async(self, user, user_query):
         thread = await self.get_or_create_ai_thread(user)
         await self.save_chat_message(thread, user, user_query)
         chat_history = await self.get_chat_history(thread)
 
         # <--- UPDATED ROUTER PROMPT ---
-        # This is the most critical change. The router is now much smarter.
         routing_prompt = f"""
         You are an expert router. Your job is to select the correct tool to answer a user's question, or to decide if no tool is needed.
         Respond with ONLY the tool name from the list below.
@@ -1534,17 +1510,19 @@ class AdminChatbotView(APIView):
         ---
         Based on the user question and the tool options, which is the single best choice?
         """
-        model = genai.GenerativeModel('models/gemini-2.5-flash')
-        response = await model.generate_content_async(routing_prompt)
-        tool_name = response.text.strip().replace('"', '')
 
-        # <--- UPDATED TOOL EXECUTION LOGIC ---
+        # --- Router step ---
+        model = ChatGoogleGenerativeAI(model="gemini-2.5-flash")
+        response = await model.ainvoke(routing_prompt)
+        tool_name = response.content.strip().replace('"', '')
+
+        # --- Tool execution ---
         tool_result = ""
         if "None" in tool_name:
             tool_result = "No tool was needed. The user is just having a conversation."
         elif "get_order_information" in tool_name:
             tool_result = await get_order_information.arun(user_query)
-        elif "get_order_history" in tool_name: # Added the new tool here
+        elif "get_order_history" in tool_name:
             tool_result = await get_order_history.arun(user_query)
         elif "check_inventory_status" in tool_name:
             tool_result = await check_inventory_status.arun(user_query)
@@ -1556,16 +1534,17 @@ class AdminChatbotView(APIView):
             logger.warning(f"Router unsure (chose '{tool_name}'). Defaulting to a conversational response for: {user_query}")
             tool_result = "No specific tool seemed to match the query. Attempting a general response."
         
-        if not tool_result: tool_result = "No specific information was found with the available tools."
+        if not tool_result:
+            tool_result = "No specific information was found with the available tools."
 
-        # --- Final Response Synthesis (no changes here) ---
+        # --- Final Response Synthesis ---
         final_prompt = self.get_improved_final_prompt(user_query, chat_history, tool_result)
-        final_response = await model.generate_content_async(final_prompt)
-        ai_response_text = final_response.text
-        
+        final_response = await model.ainvoke(final_prompt)
+        ai_response_text = final_response.content.strip()
+
         ai_user = await self.get_ai_user()
         await self.save_chat_message(thread, ai_user, ai_response_text)
-        
+
         return ai_response_text
 
     def get_improved_final_prompt(self, user_query, chat_history, tool_result):

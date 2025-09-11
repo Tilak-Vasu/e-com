@@ -9,7 +9,7 @@ import { verifyImageAPI } from '../../api';
 interface ProductFormModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (productData: FormData) => void;
+  onSubmit: (productData: FormData) => void; // ✅ Changed to FormData to match actual usage
   productToEdit: Product | null;
   categories: string[];
   onCategoryAdded: (newCategory: string) => void;
@@ -78,7 +78,6 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({
     }
     return formData.image_url;
   }, [formData.image_file, formData.image_url]);
-
 
   // Effect to clean up the object URL created for the file preview
   useEffect(() => {

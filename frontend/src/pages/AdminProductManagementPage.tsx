@@ -54,13 +54,22 @@ const AdminProductManagementPage: React.FC = () => {
     setEditingProduct(null);
   };
 
-  const handleFormSubmit = async (productData: Omit<Product, 'id' | 'is_liked' | 'reviews' | 'ai_tags'>) => {
+  // ✅ Updated to handle FormData instead of plain object
+  const handleFormSubmit = async (productData: FormData) => {
     setFormError(null);
     try {
       if (editingProduct) {
-        await api.put(`/products/${editingProduct.id}/`, productData);
+        await api.put(`/products/${editingProduct.id}/`, productData, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        });
       } else {
-        await api.post('/products/', productData);
+        await api.post('/products/', productData, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        });
       }
       await fetchProducts();
       handleCloseModal();
@@ -77,6 +86,7 @@ const AdminProductManagementPage: React.FC = () => {
       }
     }
   };
+
   const handleDeleteProduct = async (productId: number) => {
     if (window.confirm('Are you sure you want to delete this product?')) {
       try {
@@ -159,7 +169,6 @@ const AdminProductManagementPage: React.FC = () => {
         onSubmit={handleFormSubmit}
         productToEdit={editingProduct}
         categories={categories}
-        // --- NEW: Pass the handler function down to the modal ---
         onCategoryAdded={handleCategoryAdded}
       />
     </div>

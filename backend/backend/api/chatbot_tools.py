@@ -10,10 +10,9 @@ from asgiref.sync import sync_to_async
 
 from .models import Order, OrderItem, Product
 from .vector_db import search_products, search_documents
-import google.generativeai as genai
 
+from langchain_google_genai import ChatGoogleGenerativeAI  # Updated import
 
-# --- ASYNC HELPER FOR DATE PARSING (NETWORK I/O) ---
 async def parse_date_query_with_ai(query: str) -> dict:
     """
     Uses a fast, non-blocking LLM call to parse a natural language query 
@@ -37,9 +36,9 @@ async def parse_date_query_with_ai(query: str) -> dict:
     User Query: "{query}"
     """
     try:
-        model = genai.GenerativeModel('models/gemini-2.5-flash')
-        response = await model.generate_content_async(prompt)
-        json_string = response.text.strip().replace("```json", "").replace("```", "")
+        model = ChatGoogleGenerativeAI(model="gemini-2.5-flash")
+        response = await model.ainvoke(prompt)
+        json_string = response.content.strip().replace("```json", "").replace("```", "")
         dates = json.loads(json_string)
         return {
             "start_date": datetime.datetime.strptime(dates["start_date"], "%Y-%m-%d").date(),

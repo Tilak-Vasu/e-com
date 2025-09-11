@@ -4,12 +4,12 @@ from django.conf import settings
 # --- Import both models and the new vector DB function ---
 from .models import Product, Order
 from .vector_db import index_single_order
-import google.generativeai as genai
+from langchain_google_genai import ChatGoogleGenerativeAI  # Updated import
 import json
 import logging
 from django.db import transaction
-from django.db.models.signals import post_save, post_delete # <-- Add post_delete
-from .models import PolicyDocument # <-- Add PolicyDocument
+from django.db.models.signals import post_save, post_delete  # <-- Add post_delete
+from .models import PolicyDocument  # <-- Add PolicyDocument
 from .vector_db import (
     index_single_order, 
     index_document, 
@@ -20,7 +20,7 @@ from .vector_db import (
 )
 
 logger = logging.getLogger(__name__)
-genai.configure(api_key=settings.GEMINI_API_KEY)
+genai = ChatGoogleGenerativeAI(api_key=settings.GEMINI_API_KEY)  # Updated initialization
 
 @receiver(post_save, sender=Product)
 def generate_ai_tags_for_product(sender, instance, created, **kwargs):
@@ -94,7 +94,6 @@ def generate_ai_tags_for_product(sender, instance, created, **kwargs):
         logger.error(f"Error generating AI tags for {instance.name}: {e}")
 
 
-
 @receiver(post_save, sender=Order)
 def on_order_saved(sender, instance, **kwargs): #<-- Simplified signature
     """
@@ -108,7 +107,6 @@ def on_order_saved(sender, instance, **kwargs): #<-- Simplified signature
         index_single_order(instance)
     except Exception as e:
         logger.error(f"Failed to automatically index order {instance.id}: {e}")
-
 
 
 # --- NEW SIGNALS FOR POLICY DOCUMENTS ---

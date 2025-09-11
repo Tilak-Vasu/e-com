@@ -1,0 +1,34 @@
+# docker-compose.yml
+
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+    volumes:
+      - ./backend:/app
+      - chroma_db:/app/chroma_db
+      - media_files:/app/media
+    container_name: eshop-backend
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./backend/.env
+    # --- THIS IS THE FIX ---
+    # Tell Python to also look for modules inside the /app/backend directory
+    environment:
+      - PYTHONPATH=/app/backend
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: eshop-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+
+volumes:
+  chroma_db:
+  media_files:
