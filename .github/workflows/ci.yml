@@ -1,0 +1,122 @@
+# # .github/workflows/ci.yml
+
+# name: E-Shop CI/CD Pipeline
+
+# on:
+#   push:
+#     branches: [ "main" ]
+#   pull_request:
+#     branches: [ "main" ]
+
+# jobs:
+#   build-and-push:
+#     runs-on: ubuntu-latest
+#     permissions:
+#       contents: read
+#       packages: write # Grant permission for the job to write to GHCR
+
+#     steps:
+#       - name: Checkout code
+#         uses: actions/checkout@v3
+
+#       - name: Set up Docker Buildx
+#         uses: docker/setup-buildx-action@v2
+
+#       # --- THIS IS THE CORRECTED LOGIN STEP ---
+#       - name: Log in to GitHub Container Registry
+#         uses: docker/login-action@v2
+#         with:
+#           registry: ghcr.io
+#           # Best Practice: Use github.actor to dynamically get the username of the person who triggered the workflow.
+#           # This avoids needing a separate GH_USERNAME secret.
+#           username: ${{ github.actor }}
+#           # The syntax for the password secret is correct as is.
+#           password: ${{ secrets.GH_PAT }}
+
+#       # --- THIS IS THE CORRECTED BUILD/PUSH STEP for Backend ---
+#       - name: Build and push Backend image
+#         uses: docker/build-push-action@v4
+#         with:
+#           context: ./backend
+#           file: ./backend/Dockerfile
+#           push: true
+#           # We use github.actor here as well to ensure the image tag is correct.
+#           tags: ghcr.io/${{ github.actor }}/eshop-backend:latest
+
+#       # --- THIS IS THE CORRECTED BUILD/PUSH STEP for Frontend ---
+#       - name: Build and push Frontend image
+#         uses: docker/build-push-action@v4
+#         with:
+#           context: ./frontend
+#           file: ./frontend/Dockerfile
+#           push: true
+#           tags: ghcr.io/${{ github.actor }}/eshop-frontend:latest
+
+
+# A name for your workflow, which will be displayed in the Actions tab
+name: E-Shop CI/CD Pipeline
+
+# Controls when the workflow will run
+on:
+  # Triggers the workflow on push events but only for the "main" branch
+  push:
+    branches: [ "main" ]
+  
+  # Also triggers the workflow on pull request events targeted at the "main" branch
+  pull_request:
+    branches: [ "main" ]
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This job is named "build-and-push"
+  build-and-push:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+
+    # These permissions are required to push to the GitHub Container Registry (GHCR)
+    permissions:
+      contents: read
+      packages: write
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # Step 1: Checks out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Step 2: Sets up Docker Buildx for building container images
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # Step 3: Logs in to the GitHub Container Registry
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          # 'github.actor' is the username of the person who initiated the workflow.
+          # This is the modern best practice and removes the need for a GH_USERNAME secret.
+          username: ${{ github.actor }}
+          # The GH_PAT secret is a Personal Access Token with 'write:packages' scope.
+          password: ${{ secrets.GH_PAT }}
+
+      # Step 4: Build and push the backend Docker image
+      - name: Build and push Backend image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          push: true
+          # Tags the image with the repository owner's username and a name.
+          # Example: ghcr.io/tilak-vasu/eshop-backend:latest
+          tags: ghcr.io/${{ github.repository_owner }}/eshop-backend:latest
+
+      # Step 5: Build and push the frontend Docker image
+      - name: Build and push Frontend image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          file: ./frontend/Dockerfile
+          push: true
+          # Using github.repository_owner is slightly more robust than github.actor.
+          # Example: ghcr.io/tilak-vasu/eshop-frontend:latest
+          tags: ghcr.io/${{ github.repository_owner }}/eshop-frontend:latest
