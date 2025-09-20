@@ -79,7 +79,7 @@ def on_product_save(sender, instance, created, **kwargs):
         """
         try:
             model = ChatGoogleGenerativeAI(
-                model="gemini-1.5-flash",  # Corrected to a valid model, like 1.5-flash
+                model="gemini-2.5-flash",  # Corrected to a valid model, like 2.5-flash
                 google_api_key=settings.GEMINI_API_KEY,
                 temperature=0.4,
             )

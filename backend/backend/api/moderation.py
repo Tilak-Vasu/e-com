@@ -28,7 +28,7 @@ def moderate_text_with_gemini(text: str) -> bool:
     try:
         # --- THE FIX: Use the LangChain syntax ---
         llm = ChatGoogleGenerativeAI(
-            model="gemini-1.5-flash",
+            model="gemini-2.5-flash",
             temperature=0, # Low temperature for factual classification
             google_api_key=settings.GEMINI_API_KEY
         )

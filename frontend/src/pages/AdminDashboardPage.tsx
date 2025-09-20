@@ -15,6 +15,7 @@ import {
 } from 'chart.js';
 import './AdminDashboardPage.css';
 import { Link } from 'react-router-dom'; // --- IMPORT for navigation ---
+import PerformanceMetricsWidget from '../components/admin/PerformanceMetricsWidget';
 
 // Register Chart.js components
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement);
@@ -324,6 +325,7 @@ const AdminDashboardPage: React.FC = () => {
                 icon="📄" 
                 to="/admin/documents" 
             />
+        {data.performance_metrics && <PerformanceMetricsWidget data={data.performance_metrics} />}
 
             <div className="dashboard-widget chart-widget main-chart">
                 <div className="widget-header">

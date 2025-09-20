@@ -1,5 +1,6 @@
 # api/chatbot_tools.py
 
+from django.conf import settings
 from langchain.tools import tool
 from django.db.models import Sum, Count
 from django.utils import timezone
@@ -36,7 +37,7 @@ async def parse_date_query_with_ai(query: str) -> dict:
     User Query: "{query}"
     """
     try:
-        model = ChatGoogleGenerativeAI(model="gemini-2.5-flash")
+        model = ChatGoogleGenerativeAI(model="gemini-2.5-flash",google_api_key=settings.GEMINI_API_KEY)
         response = await model.ainvoke(prompt)
         json_string = response.content.strip().replace("```json", "").replace("```", "")
         dates = json.loads(json_string)

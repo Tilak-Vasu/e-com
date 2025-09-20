@@ -1,0 +1,41 @@
+# backend/.gitignore
+
+# --- Django Specific ---
+*.log
+*.pot
+*.pyc
+__pycache__/
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+
+# --- Media and Static Files ---
+# User-uploaded files should not be in Git. They should be stored in a cloud bucket
+# or a persistent volume in production.
+/media/
+
+# --- Vector Database ---
+# The local ChromaDB instance should not be in Git. It will be rebuilt or
+# managed by a persistent volume in production.
+/chroma_db/
+
+# --- Python Dependencies & Environment ---
+# The virtual environment folder. This is the most important rule.
+venv/
+.venv/
+env/
+.env
+
+.cache/
+# --- Editor/OS Specific ---
+.idea/
+.vscode/
+*.swp
+*~
+.DS_Store
+
+# --- Build Artifacts ---
+# In case you run packaging commands locally
+/dist/
+/build/
+*.egg-info/

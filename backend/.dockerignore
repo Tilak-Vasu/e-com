@@ -1,0 +1,31 @@
+# backend/.dockerignore
+
+# Ignore the Git repository itself
+.git
+.gitignore
+
+# Ignore the Python virtual environment
+venv/
+.venv/
+env/
+
+# Ignore Python cache
+__pycache__/
+*.pyc
+
+# Ignore local databases and user-uploaded media
+# These will be handled by Docker volumes, not copied into the image.
+db.sqlite3
+db.sqlite3-journal
+chroma_db/
+media/
+cache/
+# CRITICAL: Ignore environment files containing secrets
+.env
+.env.*
+production.env
+
+# Ignore editor and OS files
+.vscode/
+.idea/
+.DS_Store

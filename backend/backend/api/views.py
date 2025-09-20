@@ -163,7 +163,7 @@ def get_batch_ai_inventory_insights(problem_products):
     """
 
     try:
-        model = ChatGoogleGenerativeAI(model="gemini-2.5-flash")
+        model = ChatGoogleGenerativeAI(model="gemini-2.5-flash",google_api_key=settings.GEMINI_API_KEY)
         response = model.invoke(prompt)
         
         json_string = response.content.strip().replace("```json", "").replace("```", "")
@@ -263,42 +263,109 @@ class ProductViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['post'], url_path='verify-image', permission_classes=[permissions.IsAdminUser])
     def verify_image(self, request):
+        """
+        Verify if an uploaded image matches the product name and category using AI.
+        """
         product_name = request.data.get('name')
-        # --- NEW: Get the category from the request ---
         category = request.data.get('category')
         image_file = request.FILES.get('image_file')
 
         if not product_name or not category or not image_file:
-            return Response({"error": "Product name, category, and an image file are required."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({
+                "error": "Product name, category, and an image file are required."
+            }, status=status.HTTP_400_BAD_REQUEST)
 
         try:
+            # Check if API key is configured
+            if not hasattr(settings, 'GEMINI_API_KEY') or not settings.GEMINI_API_KEY:
+                logger.error("GEMINI_API_KEY not found in settings")
+                return Response({
+                    "error": "AI service not configured. Please check API key."
+                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+            # Open and process the image
             image = Image.open(image_file)
             
-            # --- THE FIX: The prompt now includes the category for better context ---
-            prompt_parts = [
-                f"You are an e-commerce content validator. Analyze this image. "
-                f"Does the image primarily feature a '{product_name}' that belongs in the '{category}' category? "
-                f"Respond with a single word: YES or NO.",
-                image,
-            ]
+            # Convert to RGB if necessary (handles different formats)
+            if image.mode != 'RGB':
+                image = image.convert('RGB')
+            
+            # Convert image to base64 for LangChain
+            import io
+            import base64
+            
+            byte_stream = io.BytesIO()
+            image.save(byte_stream, format='JPEG')
+            image_bytes = byte_stream.getvalue()
+            image_b64 = base64.b64encode(image_bytes).decode('utf-8')
+            
+            # Create proper message format for LangChain
+            from langchain_core.messages import HumanMessage
+            
+            message = HumanMessage(
+                content=[
+                    {
+                        "type": "text",
+                        "text": f"You are an e-commerce content validator. Analyze this image carefully. "
+                            f"Does the image show a '{product_name}' that clearly belongs in the '{category}' category? "
+                            f"Consider if a customer searching for this product would expect to see this exact image. "
+                            f"Respond with ONLY one word: YES or NO. Be strict in your evaluation."
+                    },
+                    {
+                        "type": "image_url",
+                        "image_url": {"url": f"data:image/jpeg;base64,{image_b64}"}
+                    }
+                ]
+            )
 
-            model = ChatGoogleGenerativeAI(model="gemini-2.5-flash")
-            response = model.invoke(prompt_parts)
+            # FIXED: Initialize the model with proper API key
+            model = ChatGoogleGenerativeAI(
+                model="gemini-2.5-flash",
+                google_api_key=settings.GEMINI_API_KEY,
+                temperature=0
+            )
+            
+            response = model.invoke([message])
+            
+            if not response or not response.content:
+                logger.error("AI returned empty response")
+                return Response({
+                    "error": "Unable to verify image. AI service returned no response."
+                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
             
             decision = response.content.strip().upper()
+            logger.info(f"AI decision for '{product_name}' in '{category}': {decision}")
 
+            # Only allow if AI explicitly says YES
             if "YES" in decision:
-                return Response({"match": True, "decision": "YES"}, status=status.HTTP_200_OK)
+                return Response({
+                    "match": True, 
+                    "decision": "YES",
+                    "message": "Image matches the product and category"
+                }, status=status.HTTP_200_OK)
             elif "NO" in decision:
-                return Response({"match": False, "decision": "NO"}, status=status.HTTP_200_OK)
+                return Response({
+                    "match": False, 
+                    "decision": "NO",
+                    "error": f"Image does not match the product '{product_name}' in category '{category}'"
+                }, status=status.HTTP_400_BAD_REQUEST)
             else:
-                logger.warning(f"Unexpected image verification response: {response.content}")
-                return Response({"match": True, "decision": "UNCLEAR_DEFAULT_YES"}, status=status.HTTP_200_OK)
+                # If response is unclear, reject for safety
+                logger.warning(f"Unclear AI response for image verification: {response.content}")
+                return Response({
+                    "match": False,
+                    "decision": "UNCLEAR",
+                    "error": "Unable to clearly verify image match. Please try with a clearer image."
+                }, status=status.HTTP_400_BAD_REQUEST)
 
         except Exception as e:
             logger.error(f"Image verification failed: {e}", exc_info=True)
-            return Response({"match": True, "decision": "API_ERROR_DEFAULT_YES"}, status=status.HTTP_200_OK)
-        
+            
+            # Return error instead of defaulting to success
+            return Response({
+                "error": "Image verification failed due to technical error. Please try again.",
+                "details": str(e) if settings.DEBUG else "Technical error occurred"
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)   
         
     @action(detail=False, methods=['get'], url_path='bestsellers')
     def bestsellers(self, request):
@@ -757,6 +824,8 @@ class OrderListCreateView(generics.ListCreateAPIView):
 # ==========================================================
 import datetime
 from django.utils import timezone
+from .models import PerformanceMetric
+from django.db.models import Count, Avg
 
 class AdminDashboardView(APIView):
     """
@@ -940,6 +1009,38 @@ class AdminDashboardView(APIView):
             'recent_transactions': OrderHistorySerializer(recent_transactions, many=True, context={'request': request}).data,
             # ✨ Use the filtered and sorted list here
             'inventory_insights': problematic_inventory_insights
+        }
+
+        seven_days_ago = timezone.now() - datetime.timedelta(days=7)
+        perf_metrics = PerformanceMetric.objects.filter(timestamp__gte=seven_days_ago)
+
+        # Data for Status Code Pie Chart
+        status_code_data = (
+            perf_metrics.values('status_code')
+            .annotate(count=Count('status_code'))
+            .order_by('status_code')
+        )
+
+        # Data for Average Response Time Bar Chart (Top 10 slowest)
+        avg_response_time_data = (
+            perf_metrics.values('url_endpoint')
+            .annotate(avg_response=Avg('response_time_ms'))
+            .order_by('-avg_response')[:10]
+        )
+
+        # Add the new performance data to the main response dictionary
+        data['performance_metrics'] = {
+            'total_requests': perf_metrics.count(),
+            'error_count': perf_metrics.filter(status_code__gte=400).count(),
+            'avg_latency': perf_metrics.aggregate(avg_latency=Avg('response_time_ms'))['avg_latency'] or 0,
+            'status_code_chart': {
+                'labels': [str(d['status_code']) for d in status_code_data], # Convert each status code to a string
+                'values': [d['count'] for d in status_code_data],
+            },
+            'response_time_chart': {
+                'labels': [d['url_endpoint'] for d in avg_response_time_data],
+                'values': [round(d['avg_response'], 2) for d in avg_response_time_data],
+            }
         }
         return Response(data)
 
@@ -1278,7 +1379,7 @@ class ChatbotView(APIView):
         NEWEST QUESTION: "{user_query}"
         """
 
-        model = ChatGoogleGenerativeAI(model="gemini-2.5-flash")
+        model = ChatGoogleGenerativeAI(model="gemini-2.5-flash",google_api_key=settings.GEMINI_API_KEY)
         main_response = await model.ainvoke(final_prompt)
         ai_response_text = main_response.content.strip()
         
@@ -1512,7 +1613,7 @@ class AdminChatbotView(APIView):
         """
 
         # --- Router step ---
-        model = ChatGoogleGenerativeAI(model="gemini-2.5-flash")
+        model = ChatGoogleGenerativeAI(model="gemini-2.5-flash",google_api_key=settings.GEMINI_API_KEY)
         response = await model.ainvoke(routing_prompt)
         tool_name = response.content.strip().replace('"', '')
 
@@ -1569,4 +1670,22 @@ class AdminChatbotView(APIView):
         4.  If the tool data says it was a greeting or conversational (e.g., "No tool was needed..."), then and ONLY then, respond with a simple greeting like "Hello! How can I help?".
         """
 
+
+from django.db import connection
+from django.db.utils import OperationalError
+class HealthCheckView(APIView):
+    """A simple view to check the health of the application."""
+    permission_classes = [] # Allow public access to this endpoint
+    authentication_classes = []
+
+    def get(self, request, *args, **kwargs):
+        # Check database connection
+        try:
+            connection.cursor()
+        except OperationalError:
+            return Response({"database": "unhealthy"}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+        
+        # You can add more checks here (e.g., check Redis, check AI API connectivity)
+        
+        return Response({"status": "ok"}, status=status.HTTP_200_OK)
 

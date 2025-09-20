@@ -1,0 +1,23 @@
+# frontend/.dockerignore
+
+# Ignore the Git repository itself
+.git
+.gitignore
+
+# Ignore local dependencies. This is the most important rule for speed.
+# The Dockerfile will run 'npm install' inside the container.
+node_modules/
+
+# Ignore the local build output. The Dockerfile creates its own.
+dist/
+.vite/
+
+# CRITICAL: Ignore environment files containing secrets
+.env
+.env.local
+.env.*.local
+
+# Ignore editor and OS files
+.vscode/
+.idea/
+.DS_Store

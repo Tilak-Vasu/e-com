@@ -25,7 +25,7 @@ try:
     print("Successfully configured with API key.")
     print("Note: The LangChain library does not have a direct 'list_models' function.")
     print("However, successful initialization proves that your credentials and the default model are working.")
-    print("Commonly available models for generative tasks are: 'gemini-1.5-flash', 'gemini-1.5-pro'")
+    print("Commonly available models for generative tasks are: 'gemini-2.5-flash', 'gemini-1.5-pro'")
 
 except Exception as e:
     print(f"\nAn error occurred: {e}")

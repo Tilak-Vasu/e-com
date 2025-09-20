@@ -16,6 +16,7 @@ from .views import PolicyDocumentViewSet
 router = DefaultRouter()
 router.register(r'products', ProductViewSet, basename='product')
 router.register(r'documents', PolicyDocumentViewSet, basename='document')
+from .views import HealthCheckView # <-- Import the new view
 
 urlpatterns = [
     # --- AUTHENTICATION ---
@@ -40,7 +41,7 @@ urlpatterns = [
     path('cart/', CartView.as_view(), name='user-cart'), # <-- ADD THIS LINE
     path('chatbot/', ChatbotView.as_view(), name='chatbot'), # <-- ADD THIS LINE
 
-
+    path('health/', HealthCheckView.as_view(), name='health-check'), # <-- ADD THIS LINE
     # --- ROUTER URLS ---
     path('', include(router.urls)),
 ]

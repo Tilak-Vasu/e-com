@@ -1,46 +1,45 @@
-# backend/Dockerfile
-
-# --- Build Stage ---
-# Use an official Python image as a parent image
+# --- STAGE 1: The "Builder" Stage ---
 FROM python:3.11-slim as builder
-
-# Set environment variables
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
-
-# Set the working directory in the container
 WORKDIR /app
 
-# Install system dependencies that might be needed for some Python packages
+# Install system dependencies including PostgreSQL dev libraries
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
+    curl \
     libpq-dev \
  && rm -rf /var/lib/apt/lists/*
 
-# Install poetry for dependency management
-# Using Poetry is a best practice over pip for reproducibility.
-# If you prefer pip, you can replace this with pip install.
+# Copy requirements.txt
 COPY requirements.txt .
 RUN pip wheel --no-cache-dir --wheel-dir /app/wheels -r requirements.txt
 
-
-# --- Final Stage ---
+# --- STAGE 2: The "Final" Production Stage ---
 FROM python:3.11-slim
-
 WORKDIR /app
 
-# Copy the pre-built wheels from the builder stage
-COPY --from=builder /app/wheels /wheels
+# Install runtime dependencies including PostgreSQL client libraries
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    libpq5 \
+ && rm -rf /var/lib/apt/lists/*
 
-# Install the dependencies from the wheels
+# Copy wheels and install dependencies
+COPY --from=builder /app/wheels /wheels
 RUN pip install --no-cache /wheels/*
 
-# Copy the rest of the backend application code
+# Copy all backend files
 COPY . .
 
-# Expose the port the app runs on
+# Change working directory to the inner backend folder where Django project is
+WORKDIR /app/backend
+
 EXPOSE 8000
 
-# Command to run the application using Daphne (ASGI server)
-# This is the production-ready command.
+# Health check - use your existing health endpoint
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+  CMD curl -f http://localhost:8000/api/health/ || exit 1
+
+# Run from the correct directory where manage.py is located
 CMD ["daphne", "-b", "0.0.0.0", "-p", "8000", "backend.asgi:application"]

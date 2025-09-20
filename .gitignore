@@ -1,0 +1,61 @@
+k8s-secrets.env
+.venv/
+
+dist/
+build/
+
+node_modules/
+# VS Code editor settings
+.vscode/
+
+# macOS folder attributes
+.DS_Store
+
+# Windows thumbnail cache
+Thumbs.db
+
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Python cache files
+__pycache__/
+*.pyc
+
+# Local SQLite database file
+db.sqlite3
+db.sqlite3-journal
+staticfiles_build/
+
+# Log files
+*.log
+
+datadump.json
+
+
+
+.env
+.env.*
+!.env.example
+
+# --- Frontend ---
+# Node.js dependencies and build artifacts
+node_modules/
+dist/
+build/
+.npm/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# --- Backend ---
+# Python virtual environment
+.venv/
+venv/
+env/
+
+# Python cache and bytecode
+__pycache__/
+*.pyc
+*.pyo
+*.pyd

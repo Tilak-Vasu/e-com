@@ -1,34 +1,178 @@
-# docker-compose.yml
-
-version: '3.8'
-
 services:
+  # --- SERVICE 1: Redis (Required by Django Channels) ---
+  redis:
+    image: "redis:7-alpine"
+    container_name: eshop-redis
+    restart: always
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # --- SERVICE 2: Backend (ASGI with Daphne) ---
   backend:
     build:
       context: ./backend
-    volumes:
-      - ./backend:/app
-      - chroma_db:/app/chroma_db
-      - media_files:/app/media
     container_name: eshop-backend
+    restart: always
     ports:
       - "8000:8000"
+    volumes:
+      # For development - mount the backend directory
+      - ./backend:/app
+      # Persistent volumes  
+      - chroma_db:/app/chroma_db
+      - media_files:/app/media
+    environment:
+      # Override Redis URL to use container
+      - REDIS_URL=redis://redis:6379/1
     env_file:
       - ./backend/.env
-    # --- THIS IS THE FIX ---
-    # Tell Python to also look for modules inside the /app/backend directory
-    environment:
-      - PYTHONPATH=/app/backend
+    depends_on:
+      redis:
+        condition: service_healthy
 
+  # --- SERVICE 3: Frontend (React + Nginx) ---
   frontend:
     build:
       context: ./frontend
     container_name: eshop-frontend
+    restart: always
     ports:
       - "3000:80"
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
 
 volumes:
   chroma_db:
   media_files:
+
+
+# # docker-compose.yml
+# version: '3.8'
+
+# services:
+#   # --- SERVICE 1: Redis (Required by Django Channels) ---
+#   redis:
+#     image: "redis:7-alpine"
+#     container_name: eshop-redis
+#     restart: always
+#     networks:
+#       - eshop-network
+#     healthcheck:
+#       test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+#       interval: 10s
+#       timeout: 5s
+#       retries: 5
+
+#   # --- SERVICE 2: API Load Balancer (Nginx) ---
+#   api-load-balancer:
+#     image: nginx:1.25-alpine
+#     container_name: eshop-api-lb
+#     restart: always
+#     ports:
+#       - "8080:80"  # API load balancer on port 8080
+#     volumes:
+#       - ./nginx/api-nginx.conf:/etc/nginx/nginx.conf:ro
+#     networks:
+#       - eshop-network
+#     depends_on:
+#       - backend-1
+#       - backend-2
+#     healthcheck:
+#       test: ["CMD", "curl", "-f", "http://localhost/health"]
+#       interval: 30s
+#       timeout: 10s
+#       retries: 3
+
+#   # --- SERVICE 3: Backend Instances (Multiple for Load Balancing) ---
+#   backend-1:
+#     build:
+#       context: ./backend
+#     container_name: eshop-backend-1
+#     restart: always
+#     expose:
+#       - "8000"
+#     volumes:
+#       - ./backend:/app
+#       - chroma_db:/app/chroma_db
+#       - media_files:/app/media
+#     environment:
+#       - REDIS_URL=redis://redis:6379/1
+#       - INSTANCE_ID=backend-1
+#       - DJANGO_SETTINGS_MODULE=backend.settings
+#     env_file:
+#       - ./backend/.env
+#     networks:
+#       - eshop-network
+#     depends_on:
+#       redis:
+#         condition: service_healthy
+#     healthcheck:
+#       test: ["CMD", "curl", "-f", "http://localhost:8000/api/health/"]
+#       interval: 30s
+#       timeout: 10s
+#       start_period: 30s
+#       retries: 3
+
+#   backend-2:
+#     build:
+#       context: ./backend
+#     container_name: eshop-backend-2
+#     restart: always
+#     expose:
+#       - "8000"
+#     volumes:
+#       - ./backend:/app
+#       - chroma_db:/app/chroma_db
+#       - media_files:/app/media
+#     environment:
+#       - REDIS_URL=redis://redis:6379/1
+#       - INSTANCE_ID=backend-2
+#       - DJANGO_SETTINGS_MODULE=backend.settings
+#     env_file:
+#       - ./backend/.env
+#     networks:
+#       - eshop-network
+#     depends_on:
+#       redis:
+#         condition: service_healthy
+#     healthcheck:
+#       test: ["CMD", "curl", "-f", "http://localhost:8000/api/health/"]
+#       interval: 30s
+#       timeout: 10s
+#       start_period: 30s
+#       retries: 3
+
+#   # --- SERVICE 4: Auto Scaler ---
+#   auto-scaler:
+#     build:
+#       context: ./auto-scaler
+#     container_name: eshop-auto-scaler
+#     restart: always
+#     volumes:
+#       - /var/run/docker.sock:/var/run/docker.sock
+#     environment:
+#       - DOCKER_API_VERSION=1.41
+#       - MIN_REPLICAS=2
+#       - MAX_REPLICAS=5
+#       - CPU_THRESHOLD=70
+#       - MEMORY_THRESHOLD=80
+#       - SCALE_UP_COOLDOWN=300
+#       - SCALE_DOWN_COOLDOWN=600
+#     networks:
+#       - eshop-network
+#     depends_on:
+#       - backend-1
+#       - backend-2
+#       - api-load-balancer
+
+# volumes:
+#   chroma_db:
+#   media_files:
+
+# networks:
+#   eshop-network:
+#     driver: bridge

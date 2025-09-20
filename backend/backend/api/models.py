@@ -170,3 +170,16 @@ class PolicyDocument(models.Model):
 
     def __str__(self):
         return self.title
+    
+
+
+class PerformanceMetric(models.Model):
+    request_type = models.CharField(max_length=10)
+    url_endpoint = models.CharField(max_length=2048)
+    response_time_ms = models.FloatField()
+    status_code = models.IntegerField()
+    timestamp = models.DateTimeField(auto_now_add=True)
+    user_agent = models.TextField(blank=True, null=True)
+
+    class Meta:
+        ordering = ['-timestamp']
