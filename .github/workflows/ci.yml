@@ -118,10 +118,15 @@ jobs:
           
       - name: Run Django Tests
         env:
+          # --- THESE ARE YOUR EXISTING, CORRECT VARIABLES ---
           SECRET_KEY: 'django-insecure-test-key-for-ci-only'
           DEBUG: 'True'
-          DATABASE_URL: 'postgresql://postgres:postgres@localhost:5432/test_db'
-          ALLOWED_HOSTS: 'localhost,127.0.0.1'
+          DATABASE_URL: 'postgresql://postgres:postgres@localhost:5432/test_db'          
+          # --- ADD THESE LINES ---
+          # Provide dummy values for the tests. The value doesn't matter, it just needs to exist.
+          STRIPE_PUBLISHABLE_KEY: 'pk_test_dummykeyfortesting'
+          STRIPE_SECRET_KEY: 'sk_test_dummykeyfortesting'
+          GEMINI_API_KEY: 'dummy-gemini-api-key-for-ci'
         run: |
           cd backend/backend
           python manage.py migrate

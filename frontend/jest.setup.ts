@@ -1,4 +1,5 @@
-// frontend/src/jest.setup.ts
+// src/jest.setup.ts
+import '@testing-library/jest-dom';
 
 // This mocks the 'import.meta' object, which is not available in Jest's environment.
 // We are defining a fake version of it for all our tests.
