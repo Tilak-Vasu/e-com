@@ -44,6 +44,7 @@
 # # Run from the correct directory where manage.py is located
 # CMD ["daphne", "-b", "0.0.0.0", "-p", "8000", "backend.asgi:application"]
 
+
 # --- STAGE 1: The "Builder" Stage ---
 FROM python:3.11-slim as builder
 ENV PYTHONDONTWRITEBYTECODE 1
@@ -57,8 +58,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq-dev \
  && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements.txt from backend directory
-COPY backend/requirements.txt .
+# Copy requirements.txt (from current directory since build context is backend/)
+COPY requirements.txt .
 RUN pip wheel --no-cache-dir --wheel-dir /app/wheels -r requirements.txt
 
 # --- STAGE 2: The "Final" Production Stage ---
@@ -75,8 +76,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY --from=builder /app/wheels /wheels
 RUN pip install --no-cache /wheels/*
 
-# Copy backend files to /app
-COPY backend/ .
+# Copy all files from current directory (backend/) to /app
+COPY . .
 
 EXPOSE 8000
 
