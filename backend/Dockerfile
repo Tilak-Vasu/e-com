@@ -57,8 +57,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq-dev \
  && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements.txt (from current directory since we're in backend/)
-COPY requirements.txt .
+# Copy requirements.txt from backend directory
+COPY backend/requirements.txt .
 RUN pip wheel --no-cache-dir --wheel-dir /app/wheels -r requirements.txt
 
 # --- STAGE 2: The "Final" Production Stage ---
@@ -75,8 +75,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY --from=builder /app/wheels /wheels
 RUN pip install --no-cache /wheels/*
 
-# Copy all files from current directory (backend/) to /app
-COPY . .
+# Copy backend files to /app
+COPY backend/ .
 
 EXPOSE 8000
 
@@ -84,5 +84,5 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
   CMD curl -f http://localhost:8000/api/health/ || exit 1
 
-# Run daphne directly since manage.py should be in current directory
+# Run daphne - manage.py should now be in current directory
 CMD ["daphne", "-b", "0.0.0.0", "-p", "8000", "backend.asgi:application"]
