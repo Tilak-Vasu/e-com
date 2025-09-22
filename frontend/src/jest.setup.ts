@@ -3,7 +3,7 @@ import '@testing-library/jest-dom';
 
 // This mocks the 'import.meta' object, which is not available in Jest's environment.
 // We are defining a fake version of it for all our tests.
-Object.defineProperty(global, 'import.meta', {
+Object.defineProperty(globalThis, 'import.meta', {
   value: {
     env: {
       // Provide mock values for any environment variables your code uses
