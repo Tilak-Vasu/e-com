@@ -16,10 +16,8 @@ This project is designed for a scalable, self-hosted cloud environment.
 
 - **Frontend:** Deployed as a static site on **Vercel**.
 - **Backend:**
-  - Application servers (e.g., DigitalOcean Droplets) run the Django/Daphne application inside Docker containers.
+  - Application servers run the Django/Daphne application inside Docker containers.
   - **Nginx** is used as a reverse proxy on each application server.
-  - A **Managed Load Balancer** distributes traffic across all application servers.
-  - **Auto-Scaling** is configured at the cloud provider level based on CPU metrics.
 - **Database & Cache:** A centralized, **Managed PostgreSQL** database and **Managed Redis** instance are used to ensure data consistency across all application servers.
 
 ---
@@ -46,7 +44,6 @@ The application requires the following environment variables to be set on the pr
 - `DEBUG`: **Must be `False` in production.**
 - `DATABASE_URL`: The **private** connection string for the managed PostgreSQL database.
 - `REDIS_URL`: The **private** connection string for the managed Redis instance.
-- `ALLOWED_HOSTS`: The public domain of your API (e.g., `api.your-eshop.com`).
 - `STRIPE_PUBLISHABLE_KEY`, `STRIPE_SECRET_KEY`, `GEMINI_API_KEY`: Keys for third-party services.
 
 ---
