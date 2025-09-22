@@ -125,7 +125,7 @@ STATIC_URL = 'static/'
 CSRF_TRUSTED_ORIGINS = [
     'https://e-com-ctz7.onrender.com',
     'wss://e-com-ctz7.onrender.com',
-    'https://e-com-kappa-murex.vercel.app/',
+    'https://e-com-kappa-murex.vercel.app',
 ]
 
 # Default primary key field type
@@ -134,7 +134,7 @@ CSRF_TRUSTED_ORIGINS = [
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 CORS_ALLOWED_ORIGINS = [
-    "https://e-com-kappa-murex.vercel.app/",
+    "https://e-com-kappa-murex.vercel.app",
     "http://localhost:5173",
     "http://127.0.0.1:5173",
 ]
