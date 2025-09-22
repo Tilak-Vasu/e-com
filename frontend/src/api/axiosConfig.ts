@@ -8,7 +8,7 @@ const api = axios.create({
   // Use the environment variable to set the base URL.
   // This single line works for both local development and production.
   // The value of the variable itself will change depending on the environment.
-  baseURL: import.meta.env.VITE_API_BASE_URL,
+  baseURL: `${import.meta.env.VITE_API_BASE_URL}/api`,
 });
 
 // [# 2. THIS INTERCEPTOR IS ALREADY PERFECT]
