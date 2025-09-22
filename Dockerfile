@@ -77,7 +77,7 @@ COPY --from=builder /app/wheels /wheels
 RUN pip install --no-cache /wheels/*
 
 # Copy backend files to /app
-COPY backend/ .
+COPY backend/backend/ .
 RUN chmod +x ./entrypoint.sh
 EXPOSE 8000
 
