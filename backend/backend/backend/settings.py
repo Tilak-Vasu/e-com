@@ -123,7 +123,8 @@ STATIC_URL = 'static/'
 
 
 CSRF_TRUSTED_ORIGINS = [
-    'https://*.onrender.com',
+    'https://e-com-ctz7.onrender.com',
+    'wss://e-com-ctz7.onrender.com',
     'https://your-vercel-project-name.vercel.app',
 ]
 

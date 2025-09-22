@@ -4,11 +4,16 @@ import axios from 'axios';
 
 // Create a pre-configured instance of Axios
 const api = axios.create({
-  baseURL: import.meta.env.PROD ? '/api' : 'http://127.0.0.1:8000/api',
+  // [# 1. THIS IS THE ONLY CHANGE NEEDED]
+  // Use the environment variable to set the base URL.
+  // This single line works for both local development and production.
+  // The value of the variable itself will change depending on the environment.
+  baseURL: import.meta.env.VITE_API_BASE_URL,
 });
 
-// --- THIS IS THE MOST IMPORTANT PART ---
+// [# 2. THIS INTERCEPTOR IS ALREADY PERFECT]
 // This "interceptor" runs before every single request is sent.
+// No changes are needed here.
 api.interceptors.request.use(
   (config) => {
     // 1. Get the authentication tokens from localStorage.
