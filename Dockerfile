@@ -78,6 +78,9 @@ RUN pip install --no-cache /wheels/*
 
 # Copy backend files to /app
 COPY backend/backend/ .
+
+RUN chmod +x entrypoint.sh
+
 EXPOSE 8000
 
 # Environment-aware health check

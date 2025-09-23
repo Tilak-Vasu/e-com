@@ -1,12 +1,8 @@
 #!/bin/sh
-
-# Exit immediately if a command exits with a non-zero status.
 set -e
-
-# Run database migrations
-echo "Applying database migrations..."
+echo "Container started successfully"
+echo "PORT is: $PORT"
+echo "Working directory: $(pwd)"
+echo "Files in directory: $(ls -la)"
 python manage.py migrate
-
-# Start the Daphne server.
-# The 'exec' command is important, as it replaces the shell process with the Daphne process.
-exec daphne -b 0.0.0.0 -p $PORT backend.asgi:application
+exec daphne -b 0.0.0.0 -p 8000 backend.asgi:application
