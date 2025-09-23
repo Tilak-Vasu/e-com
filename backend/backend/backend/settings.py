@@ -124,7 +124,6 @@ STATIC_URL = 'static/'
 
 CSRF_TRUSTED_ORIGINS = [
     'https://e-com-ctz7.onrender.com',
-    'wss://e-com-ctz7.onrender.com',
     'https://e-com-kappa-murex.vercel.app',
 ]
 
