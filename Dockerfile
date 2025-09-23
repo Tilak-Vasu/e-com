@@ -81,8 +81,8 @@ COPY backend/backend/ .
 EXPOSE 8000
 
 # Environment-aware health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
-  CMD curl -f http://0.0.0.0:${PORT:-8000}/api/health/ || exit 1
+# HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+#   CMD curl -f http://0.0.0.0:${PORT:-8000}/api/health/ || exit 1
 
 # Run daphne - manage.py should now be in current directory
 CMD ["./entrypoint.sh"]
